@@ -1,0 +1,14 @@
+{
+  "name": "monopoline",
+  "version": "2.0.0",
+  "private": true,
+  "description": "A tabletop companion that runs every system of a property game except the board itself.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
