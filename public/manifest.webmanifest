@@ -1,0 +1,16 @@
+{
+  "name": "Monopoline",
+  "short_name": "Monopoline",
+  "description": "Runs every system of a property game except the board itself.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F1216",
+  "theme_color": "#0F1216",
+  "categories": ["games", "utilities"],
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
