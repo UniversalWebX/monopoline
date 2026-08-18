@@ -1,0 +1,15 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+# Deploy: push this repo to GitHub, then Render → New → Blueprint → pick the repo.
+services:
+  - type: web
+    name: monopoline
+    runtime: node
+    plan: free
+    # No dependencies, so there is nothing to install.
+    buildCommand: echo "no build step"
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
