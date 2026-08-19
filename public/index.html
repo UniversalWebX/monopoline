@@ -38,6 +38,9 @@
   --stripe:rgba(255,255,255,.04); --sink:#0B0E12;
 }
 *{box-sizing:border-box}
+/* an id or class that sets display beats the browser rule for [hidden],
+   so state the intent once and let it win everywhere */
+[hidden]{display:none!important}
 html,body{margin:0;padding:0;overscroll-behavior-y:contain}
 body{
   background:var(--bg); color:var(--text);
@@ -347,6 +350,24 @@ table.rt tr.on td{color:var(--accent);font-weight:600}
 
 /* confetti canvas for the win screen */
 #confetti{position:fixed;inset:0;z-index:95;pointer-events:none}
+
+/* lightweight mode strips every moving part */
+html.lite *,html.lite *::before,html.lite *::after{
+  animation:none!important;transition:none!important;filter:none!important}
+html.lite #chatFab{box-shadow:none}
+
+/* moderator announcement */
+.announce{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);
+  z-index:150;max-width:min(520px,92vw);background:var(--accent);color:var(--accent-ink);
+  border-radius:var(--r2);padding:11px 15px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}
+.announce b{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.8}
+.announce span{font-size:14px;line-height:1.4}
+
+/* moderator reset */
+html.blacked,html.blacked body{overflow:hidden!important}
+#blackout{position:fixed;inset:0;z-index:99999;background:#fff;color:#111;
+  display:grid;place-items:center;text-align:center;padding:24px;
+  font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:clamp(18px,4vw,30px);line-height:1.4}
 
 /* chat popup */
 #chatFab{position:fixed;right:14px;bottom:calc(126px + env(safe-area-inset-bottom));z-index:88;
@@ -818,7 +839,10 @@ const PTOKENS=['spire','anchor','key','lantern','gear','bolt','crown','wave',
   'tophat','boot','ship','car','cat','dog','rocket','diamond',
   'flame','leaf','moon','star','bell','trophy','umbrella','fish'];
 const UI={screen:'home',tab:'turn',pendingState:null,modalDepth:0,
-  iso:store.get('monopoline.iso')==='1',chatOpen:false,chatUnread:0};
+  iso:store.get('monopoline.iso')==='1',chatOpen:false,chatUnread:0,
+  easy:store.get('monopoline.easy')==='1',
+  lite:store.get('monopoline.lite')==='1',
+  dev:store.get('monopoline.dev')==='1'};
 
 function defaultCfg(){return{
   start:1500, salary:200, freeParking:true, skyscrapers:true,
@@ -879,6 +903,8 @@ const Net={
       this.chat.push(d); if(this.chat.length>60) this.chat.shift();
       if(!UI.chatOpen&&d.pid!==this.pid){ UI.chatUnread=(UI.chatUnread||0)+1; toast(`${d.name}: ${d.text}`); }
       renderChat(); });
+    es.addEventListener('announce',e=>{ const d=JSON.parse(e.data); showAnnounce(d.text); });
+    es.addEventListener('blackout',()=>blackout());
     es.addEventListener('signal',e=>Voice.onSignal(JSON.parse(e.data)));
     es.addEventListener('voice',e=>Voice.sync(JSON.parse(e.data).voice||[]));
     es.onerror=()=>{ this.status='reconnecting'; renderNetChip(); };
@@ -1289,6 +1315,7 @@ function showModal(opts){
     function redraw(){
       const r=opts.build(host,fin,redraw)||{};
       ft.innerHTML='';
+      if(UI.easy) plainWords(host);
       if(r.footer&&r.footer.length){
         ft.hidden=false;
         r.footer.forEach(b=>{
@@ -1301,6 +1328,7 @@ function showModal(opts){
       } else ft.hidden=true;
     }
     const xb=$('[data-x]',scrim); if(xb) xb.onclick=()=>fin(undefined);
+    if(UI.easy) plainWords(scrim);
     // keyboard: Escape closes a dismissable sheet, Tab stays inside it
     scrim.addEventListener('keydown',e=>{
       if(e.key==='Escape'&&opts.dismiss!==false){ e.preventDefault(); fin(undefined); return; }
@@ -1739,7 +1767,7 @@ async function tumbleDice(a,b){
   await wait(180);
 }
 
-const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion=()=>UI.lite||matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* Pacing. `land` is the beat between the token stopping and the space resolving,
    so the table sees where it landed before a modal covers it. */
 const TIMING={land:520,walkTotal:760,stepMin:58,stepMax:150,tumble:620};
@@ -2547,7 +2575,9 @@ function render(){
   renderNetChip();
   $('#brandMark').innerHTML=SVG.mark();
   // every screen that isn't live play sheds the play furniture
-  const chrome=on=>{ $('#actionbar').hidden=!on; if(!on) $('#side').innerHTML=''; };
+  // every screen that is not live play sheds the play furniture, the chat
+  // button included — renderChat() below only runs on the game path
+  const chrome=on=>{ $('#actionbar').hidden=!on; if(!on){ $('#side').innerHTML=''; UI.chatOpen=false; } renderChat(); };
   if(UI.screen==='home'){ chrome(false); renderHome(); return; }
   if(UI.screen==='setup'){ chrome(false); renderSetup(); return; }
   if(UI.screen==='lobby'){ chrome(false); renderLobby(); return; }
@@ -2570,7 +2600,7 @@ function render(){
     </div>
     <div class="cash"><div class="lbl">On hand</div><div class="v mono">${money(p.cash)}</div></div>`;
   tabs.hidden=false;
-  const TABS=[['turn','Turn','turn'],['board','Board','board'],['bank','Bank','bank'],['deeds','Deeds','deeds'],['log','Log','log']];
+  const TABS=[['turn','Turn','turn'],['board','Board','board'],['bank','Bank','bank'],['deeds','Deeds','deeds'],['log','Log','log'],['settings','Setup','gear']];
   // the bar only needs rebuilding once; after that just move the current marker
   if(tabs.dataset.built!=='1'){
     tabs.innerHTML=TABS.map(([k,l,ic])=>`<button data-tab="${k}" aria-current="${UI.tab===k}">${SVG.icon(ic,19)}<span>${l}</span></button>`).join('');
@@ -2582,7 +2612,7 @@ function render(){
     UI.tab=b.dataset.tab; render();
   });
   const view=$('#view');
-  ({turn:renderTurn,board:renderBoard,bank:renderBank,deeds:renderDeeds,log:renderLog}[UI.tab]||renderTurn)();
+  ({turn:renderTurn,board:renderBoard,bank:renderBank,deeds:renderDeeds,log:renderLog,settings:renderSettings}[UI.tab]||renderTurn)();
   const ci=$('#chatIn');
   if(ci){ ci.value=UI.chatDraft||''; ci.oninput=()=>{UI.chatDraft=ci.value;};
     ci.onkeydown=e=>{ if(e.key==='Enter') ACT.say(); }; }
@@ -2595,6 +2625,8 @@ function render(){
   renderActionBar();
   renderSide();
   renderChat();
+  document.documentElement.classList.toggle('lite',!!UI.lite);
+  plainWords($('#view')); plainWords($('#readout')); plainWords($('#tabs')); plainWords($('#actionbar'));
   // count the cash readout rather than snapping it
   const vEl=$('#readout .v');
   if(vEl){
@@ -2934,6 +2966,56 @@ function renderBank(){
     </div></div>`;
 }
 
+function renderSettings(){
+  const v=$('#view');
+  const mode=(key,title,body,on)=>`
+    <label class="opt" style="align-items:flex-start">
+      <input type="checkbox" data-mode="${key}" ${on?'checked':''}>
+      <span><b>${title}</b><br><span class="tiny muted">${body}</span></span>
+    </label>`;
+  v.innerHTML=`
+    <div class="card"><div class="hd">${SVG.icon('gear',16)}<h3>Modes</h3></div><div class="bd">
+      ${mode('easy','Easy words','Swaps the game\u2019s jargon for plain language a five-year-old can follow — deeds become property cards, mortgages become borrowing.',UI.easy)}
+      ${mode('lite','Lightweight','No animations, flat board, no voice chat. Everything that costs battery is switched off.',UI.lite)}
+      ${mode('dev','Developer','Unlocks the console. With this off, the console command does nothing.',UI.dev)}
+    </div></div>
+
+    <div class="card"><div class="hd">${SVG.icon('board',16)}<h3>Board</h3></div><div class="bd">
+      <div class="seg">
+        <button data-a="iso" data-v="0" aria-pressed="${!UI.iso}">Flat</button>
+        <button data-a="iso" data-v="1" aria-pressed="${!!UI.iso}" ${UI.lite?'disabled style="opacity:.4"':''}>3D</button>
+      </div>
+      ${UI.lite?'<div class="tiny muted" style="margin-top:8px">Lightweight mode keeps the board flat.</div>':''}
+    </div></div>
+
+    <div class="card"><div class="hd">${SVG.icon('palette',16)}<h3>Look</h3></div><div class="bd grid g2">
+      <button class="btn" data-a="skins">${SVG.icon('palette',17)} ${esc((SKINS[currentSkin]||SKINS.ink).name)}</button>
+      <button class="btn" data-a="account">${SVG.icon('people',17)} ${Account.signedIn?esc(Account.user.name):'Sign in'}</button>
+    </div></div>
+
+    <div class="card"><div class="hd">${SVG.icon('help',16)}<h3>Help</h3></div><div class="bd grid g2">
+      <button class="btn" data-a="tutorial">${SVG.icon('help',17)} Take the tour</button>
+      <button class="btn" data-a="rules">${SVG.icon('help',17)} How it works</button>
+      <button class="btn" data-a="jobsInfo">${SVG.icon('people',17)} The jobs</button>
+      <button class="btn" data-a="bug">${SVG.icon('bug',17)} Report a bug</button>
+    </div></div>
+
+    ${UI.dev?`<div class="card stripe" style="--c:var(--bad)"><div class="hd">${SVG.icon('build',16)}<h3>Developer</h3></div>
+      <div class="bd"><p class="tiny muted" style="margin-top:0">Type <b class="mono">/consolejeff</b> into chat to open the console.</p>
+      <button class="btn wide" data-a="openconsole">Open the console</button></div></div>`:''}`;
+  $$('[data-mode]',v).forEach(cb=>cb.onchange=()=>{
+    const k=cb.dataset.mode, on=cb.checked;
+    UI[k]=on; store.set('monopoline.'+k,on?'1':'0');
+    if(k==='lite'){
+      document.documentElement.classList.toggle('lite',on);
+      if(on){ UI.iso=false; store.set('monopoline.iso','0'); if(Voice.on) Voice.leave(); }
+    }
+    if(k==='easy'&&!on) location.reload();   // put the original wording back
+    render();
+    toast(on?'On':'Off');
+  });
+}
+
 function renderLog(){
   const v=$('#view');
   v.innerHTML=`
@@ -3175,7 +3257,10 @@ const ACT={
     const text=el.value.trim();
     el.value=''; UI.chatDraft='';
     // secret handle — never broadcast, never logged
-    if(/^\/consolejeff$/i.test(text)){ openConsole(); return; }
+    if(/^\/consolejeff$/i.test(text)){
+      if(!UI.dev){ toast('Developer mode is off — turn it on in Setup.'); return; }
+      openConsole(); return;
+    }
     if(Net.online) Net.say(text);
     else { log(`<b>${esc(G.players[meId()].name)}</b>: ${esc(text)}`,'system'); save(); render(); }
   },
@@ -3192,7 +3277,11 @@ const ACT={
   account(){ openAccount(); },
   skins(){ chooseSkin(); },
   tutorial(){ startTutorial(); },
-  iso(v){ UI.iso=v==='1'; store.set('monopoline.iso',UI.iso?'1':'0'); render(); },
+  iso(v){
+    if(v==='1'&&UI.lite){ toast('Lightweight mode keeps the board flat.'); return; }
+    UI.iso=v==='1'; store.set('monopoline.iso',UI.iso?'1':'0'); render();
+  },
+  openconsole(){ if(UI.dev) openConsole(); },
   morelog(){ UI.logShown=(UI.logShown||60)+120; render(); }
 };
 
@@ -3298,7 +3387,7 @@ function openConsole(){
   UI.conSpace=UI.conSpace==null?1:UI.conSpace;
   showModal({title:'Console',build(host,fin,redraw){
     const locked=!conWritable();
-    const tabs=[['players','Players'],['deeds','Deeds'],['game','Game'],['raw','Raw']];
+    const tabs=[['players','Players'],['deeds','Deeds'],['game','Game'],['server','Server'],['raw','Raw']];
     const row=(label,inner)=>`<label class="conrow"><span>${label}</span>${inner}</label>`;
     let body='';
 
@@ -3309,7 +3398,7 @@ function openConsole(){
         <div class="congrid">
           ${row('Name','<input type="text" id="f_name" value="'+esc(p.name)+'" maxlength="14">')}
           ${row('Cash','<input type="number" id="f_cash" value="'+p.cash+'" step="10">')}
-          ${row('Space (0-39)','<input type="number" id="f_pos" value="'+p.pos+'" min="0" max="39">')}
+          ${row('Move to','<select id="f_pos">'+BOARD.map((sp,k)=>'<option value="'+k+'"'+(p.pos===k?' selected':'')+'>'+k+' · '+esc(sp.n)+'</option>').join('')+'</select>')}
           ${row('Laps','<input type="number" id="f_laps" value="'+p.laps+'" min="0">')}
           ${row('Job','<select id="f_job"><option value="">— none —</option>'+JOBS.map(j=>'<option value="'+j.id+'"'+(p.job===j.id?' selected':'')+'>'+j.n+'</option>').join('')+'</select>')}
           ${row('Jail cards','<input type="number" id="f_cards" value="'+(p.cards||0)+'" min="0">')}
@@ -3347,6 +3436,7 @@ function openConsole(){
           ${row('Round','<input type="number" id="g_round" value="'+G.round+'" min="1">')}
           ${row('Market','<input type="number" id="g_econ" value="'+G.economy+'" min="60" max="160">')}
           ${row('Free Parking','<input type="number" id="g_pot" value="'+G.pot+'" min="0" step="10">')}
+          ${row('GO salary','<input type="number" id="g_sal" value="'+G.cfg.salary+'" min="0" step="10">')}
           ${row('Turn','<select id="g_turn">'+G.players.map((q,k)=>'<option value="'+k+'"'+(G.turnIdx===k?' selected':'')+'>'+esc(q.name)+'</option>').join('')+'</select>')}
           ${row('Doubles','<input type="number" id="g_dbl" value="'+G.doubles+'" min="0" max="2">')}
         </div>
@@ -3356,7 +3446,26 @@ function openConsole(){
         <div class="grid g2">
           <button class="btn" data-con="clearPacts" ${locked?'disabled':''}>Clear all alliances</button>
           <button class="btn" data-con="endGame" ${locked?'disabled':''}>Force game over</button>
+          <button class="btn" data-con="payAll" ${locked?'disabled':''}>Pay everyone…</button>
+          <button class="btn" data-con="setAll" ${locked?'disabled':''}>Set every balance…</button>
+          <button class="btn" data-con="freeJail" ${locked?'disabled':''}>Empty the jail</button>
+          <button class="btn" data-con="clearDebt" ${locked?'disabled':''}>Clear all loans</button>
         </div>`;
+    }
+
+    if(UI.conTab==='server'){
+      body=`<p class="tiny muted" style="margin-top:0">These reach <b>every table on the server</b>, not just this one.</p>
+        <div class="lbl">Announcement</div>
+        <input type="text" id="anText" maxlength="240" placeholder="Message for everyone playing">
+        <button class="btn pri wide" data-con="announce" style="margin-top:9px">Send to everyone</button>
+        <div class="hr"></div>
+        <div class="lbl">Moderator key</div>
+        <input type="text" id="anKey" placeholder="only needed if ADMIN_KEY is set" value="${esc(UI.conKey||'')}">
+        <div class="hr"></div>
+        <div class="bank-note" style="border-color:var(--bad);color:var(--bad)">
+          The reset covers every player's screen with a white notice telling them to reload.
+          Nobody can carry on until they do.</div>
+        <button class="btn dang wide" data-con="blackout" style="margin-top:9px">Reset the server for everyone</button>`;
     }
 
     if(UI.conTab==='raw'){
@@ -3388,7 +3497,7 @@ function openConsole(){
         const before=p.name;
         p.name=($('#f_name',host).value||p.name).slice(0,14);
         p.cash=Math.round(num('f_cash',p.cash));
-        p.pos=clamp(Math.round(num('f_pos',p.pos)),0,39);
+        p.pos=clamp(parseInt($('#f_pos',host).value,10)||0,0,39);
         p.laps=Math.max(0,Math.round(num('f_laps',p.laps)));
         p.job=$('#f_job',host).value||null;
         p.cards=Math.max(0,Math.round(num('f_cards',p.cards||0)));
@@ -3437,10 +3546,58 @@ function openConsole(){
         G.turnIdx=clamp(+$('#g_turn',host).value,0,G.players.length-1);
         G.doubles=clamp(Math.round(num('g_dbl',G.doubles)),0,2);
         G.rolled=on('g_rolled');
-        conLog(`round ${G.round}, market ${G.economy}, pot ${money(G.pot)}, turn to <b>${esc(cur().name)}</b>`);
+        const sal=Math.max(0,Math.round(num('g_sal',G.cfg.salary)));
+        G.cfg.salary=sal;
+        conLog(`round ${G.round}, market ${G.economy}, pot ${money(G.pot)}, GO pays ${money(sal)}, turn to <b>${esc(cur().name)}</b>`);
         toast('Game state applied');
       }
       if(act==='clearPacts'){ G.alliances=[]; G.pact=null; conLog('all alliances cleared'); }
+      if(act==='freeJail'){
+        let n=0; G.players.forEach(q=>{ if(q.jail){ q.jail=false; q.jailTurns=0; n++; } });
+        conLog(n+' player(s) let out of jail');
+      }
+      if(act==='clearDebt'){
+        let n=0; G.players.forEach(q=>{ if(q.loan){ q.loan=0; n++; } });
+        conLog(n+' loan(s) written off');
+      }
+      if(act==='payAll'){
+        const amt=await promptModal('Pay everyone','Amount for each player','200',9);
+        const v=Math.round(+amt||0);
+        if(!v) return;
+        G.players.forEach(q=>{ if(!q.bankrupt) q.cash+=v; });
+        conLog('paid '+money(v)+' to every player');
+      }
+      if(act==='setAll'){
+        const amt=await promptModal('Set every balance','Cash for each player','1500',9);
+        const v=Math.round(+amt||0);
+        if(!isFinite(v)) return;
+        G.players.forEach(q=>{ q.cash=v; });
+        conLog('every balance set to '+money(v));
+      }
+      if(act==='announce'){
+        const text=($('#anText',host).value||'').trim();
+        UI.conKey=($('#anKey',host).value||'').trim();
+        if(!text){ toast('Write the announcement first.'); return; }
+        try{
+          const r=await Net.api('admin/announce',{method:'POST',body:{text,key:UI.conKey||undefined}});
+          toast('Sent to '+r.people+' device(s) across '+r.tables+' table(s)');
+          conLog('announced to the whole server: '+esc(text));
+        }catch(e){ toast(e.message||'Could not send.'); }
+        return;
+      }
+      if(act==='blackout'){
+        UI.conKey=($('#anKey',host).value||'').trim();
+        const sure=await confirmModal('Reset the server',
+          '<p>Every player on every table gets a white screen telling them to reload.</p>'+
+          '<p class="tiny muted">Games in progress stay on the server, but everyone is interrupted.</p>',
+          'Reset it');
+        if(!sure) return;
+        try{
+          const r=await Net.api('admin/blackout',{method:'POST',body:{key:UI.conKey||undefined}});
+          toast('Reset sent to '+r.people+' device(s)');
+        }catch(e){ toast(e.message||'Could not send.'); }
+        return;
+      }
       if(act==='endGame'){
         if(!await confirmModal('Force game over','<p>The game ends now and the standings are shown.</p>','End it')) return;
         G.over=true; G.winners=alive().map(p=>p.id); G.winner=G.winners[0]!=null?G.winners[0]:null;
@@ -3471,7 +3628,14 @@ function openConsole(){
 const Account={
   token:store.get('monopoline.authToken')||null, user:null,
   get signedIn(){ return !!(this.token&&this.user); },
+  _busy:false,
   async call(path,body,method){
+    // one auth request at a time: a second tap must never register twice
+    if(this._busy&&/register|login/.test(path)) throw new Error('Already working on that.');
+    if(/register|login/.test(path)) this._busy=true;
+    try{ return await this._call(path,body,method); } finally { this._busy=false; }
+  },
+  async _call(path,body,method){
     const res=await fetch('/api/auth/'+path,{
       method:method||'POST',headers:{'Content-Type':'application/json'},
       body:body?JSON.stringify(body):undefined});
@@ -3684,7 +3848,7 @@ function renderChat(){
   pop.innerHTML=`
     <div class="hd">${SVG.icon('chat',16)}<h3>Table Talk</h3><div class="sp"></div>
       <button class="iconbtn" data-c="close" aria-label="Close">✕</button></div>
-    ${Net.online?`<div class="voicebar">
+    ${Net.online&&!UI.lite?`<div class="voicebar">
       <button class="btn sm ${Voice.on?'dang':'pri'}" data-c="voice">${Voice.on?'Leave voice':'Join voice'}</button>
       ${Voice.on?`<button class="btn sm" data-c="mute">${Voice.muted?'Unmute':'Mute'}</button>`:''}
       <div class="sp"></div>
@@ -3714,6 +3878,68 @@ function renderChat(){
   });
   const inp=$('#chatIn',pop);
   if(inp) inp.onkeydown=e=>{ if(e.key==='Enter') ACT.say(); };
+}
+
+const EASY=[
+  [/\bmortgaged\b/gi,'borrowed on'],[/\bmortgages\b/gi,'borrowing deals'],[/\bmortgage\b/gi,'borrow money on it'],
+  [/\bunmortgage\b/gi,'pay it back'],[/\bLift mortgage\b/gi,'Pay it back'],
+  [/\bdeeds\b/gi,'property cards'],[/\bdeed\b/gi,'property card'],
+  [/\bbankruptcy\b/gi,'running out of money'],[/\bbankrupt\b/gi,'out of money'],
+  [/\bDeclare Bankruptcy\b/gi,'Give up'],[/\bRaise Funds\b/gi,'Get money'],
+  [/\bliquidate\b/gi,'sell things'],[/\bsalary\b/gi,'GO money'],
+  [/\bpayday\b/gi,'job bonus'],[/\bnet worth\b/gi,'everything you own'],
+  [/\bmarket index\b/gi,'price meter'],[/\bMarket\b/g,'Prices'],[/\beconomy\b/gi,'prices'],
+  [/\balliances\b/gi,'team-ups'],[/\balliance\b/gi,'team-up'],[/\ballied\b/gi,'teamed up'],
+  [/\bpact\b/gi,'team-up deal'],[/\btithe\b/gi,'share'],
+  [/\binsurance\b/gi,'rent shield'],[/\binterest\b/gi,'extra fee'],
+  [/\bloans\b/gi,'borrowed money'],[/\bloan\b/gi,'borrowed money'],
+  [/\bcolour set\b/gi,'matching group'],[/\bcolour sets\b/gi,'matching groups'],
+  [/\bfull set\b/gi,'whole matching group'],[/\bpromoted\b/gi,'levelled up'],[/\bpromotion\b/gi,'level up'],
+  [/\butilities\b/gi,'power and water'],[/\butility\b/gi,'power or water'],
+  [/\brailroads\b/gi,'trains'],[/\brailroad\b/gi,'train'],
+  [/\bskyscraper\b/gi,'super hotel'],[/\bstanding on\b/gi,'you are on'],
+  [/\bManage deeds\b/gi,'My properties'],[/\bUnclaimed Deed\b/gi,'Nobody owns this'],
+  [/\bUnclaimed\b/g,'Nobody owns it'],[/\bOn hand\b/gi,'Money'],
+  [/\bNow playing\b/gi,'Whose turn'],[/\bJust Happened\b/gi,'What happened'],
+  [/\bTable Talk\b/gi,'Chat'],[/\bPropose alliance\b/gi,'Ask to team up'],
+  [/\bportfolio\b/gi,'your things'],[/\bassets\b/gi,'things you own'],
+  [/\bdividend\b/gi,'free money'],[/\bconsultancy fee\b/gi,'work money'],
+  [/\bmatures\b/gi,'pays out'],[/\bassessed\b/gi,'charged']
+];
+const EASY_SKIP={INPUT:1,TEXTAREA:1,SCRIPT:1,STYLE:1,SELECT:1,OPTION:1};
+function plainWords(root){
+  if(!UI.easy||!root) return;
+  const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+    acceptNode(n){
+      if(!n.nodeValue||!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      if(n.parentElement&&EASY_SKIP[n.parentElement.tagName]) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }});
+  const nodes=[];
+  for(let n=walk.nextNode();n;n=walk.nextNode()) nodes.push(n);
+  for(const n of nodes){
+    let t=n.nodeValue;
+    for(const [re,to] of EASY) t=t.replace(re,to);
+    if(t!==n.nodeValue) n.nodeValue=t;
+  }
+}
+
+/* ── moderator screens ──────────────────────────────────────── */
+function showAnnounce(text){
+  const el=document.createElement('div');
+  el.className='announce';
+  el.innerHTML='<b>Announcement</b><span>'+esc(text)+'</span>';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),12000);
+}
+function blackout(){
+  if($('#blackout')) return;
+  const el=document.createElement('div');
+  el.id='blackout';
+  el.textContent='Reload, Moderators have reset the server.';
+  document.documentElement.classList.add('blacked');
+  document.body.appendChild(el);
+  try{ if(Voice.on) Voice.leave(); if(Net.es) Net.es.close(); }catch(e){}
 }
 
 /* ── theming ─────────────────────────────────────────────────── */
@@ -3752,34 +3978,50 @@ async function chooseSkin(){
    Coach marks over the live interface: each step spotlights a real
    element and explains it in place, rather than describing it. */
 const TUTORIAL=[
-  {sel:'#app',tab:'turn',title:'Monopoline runs the table',
-   body:'Move a token on any real board, or none at all. Everything else lives here: the bank, the deeds, the rent maths, the cards and the jobs. Nothing to add up by hand.'},
+  {sel:'#view',tab:'turn',title:'Monopoline runs the table',
+   body:'You move a token on any board you like — or just read positions here. Every dollar, deed, rent calculation and card is handled for you, so nobody has to be the banker.'},
   {sel:'#readout',tab:'turn',title:'Whose turn it is',
-   body:'The name and cash at the top are always the player currently up. Online, a gold stripe down the left means it is your turn.'},
+   body:'The name and cash at the top are always the player currently up. Online, a stripe down the side marks it when that player is you.'},
   {sel:'#actionbar',tab:'turn',title:'Your one big button',
-   body:'Roll here, then End turn here. It follows you across every tab so you never go hunting, and when someone else is up it names who you are waiting on.'},
-  {sel:'#standingName',tab:'turn',title:'Where you landed',
-   body:'The space your token is on, who owns it and what it lists for. Rent, purchases and cards open by themselves after you move, so you only ever answer yes or no.'},
-  {sel:'#view .card:nth-child(2)',tab:'turn',title:'The dice',
-   body:'Tap Roll and they tumble. Prefer real dice? Switch on “I roll real dice” in house rules and you simply tap the two faces you rolled.'},
-  {sel:'#view .card:nth-child(3)',tab:'turn',title:'What else you can do',
-   body:'Trade with anyone, manage your deeds, or use your job’s special move. Doubles earn another roll; three in a row send you to jail.'},
-  {sel:'#view .card:nth-child(4)',tab:'turn',title:'Live table talk',
-   body:'Recent events and the table chat sit right here, updating live for everyone in an online game.'},
-  {sel:'nav.tabs',tab:'turn',title:'The five views',
-   body:'Turn is where you play. Board shows every piece live. Bank holds loans and insurance. Deeds lists what everyone owns. Log records every dollar that moves.'},
+   body:'Roll here, then End turn here. It follows you across every tab, so you never have to hunt for it. Roll doubles and you go again — three in a row sends you to jail.'},
+  {sel:'#view .dicewrap',tab:'turn',title:'The dice',
+   body:'Tap to roll and your token walks the board space by space. If you would rather roll real dice at the table, switch to physical dice in the setup screen and just type in what you rolled.'},
+  {sel:'#view .card',tab:'turn',title:'Where you landed',
+   body:'The space your token is on, who owns it, and what it costs. Rent and purchase offers appear on their own — you are never asked to work out a number.'},
+  {sel:'#view .card',tab:'turn',title:'Buying property',
+   body:'Land on an unowned space and you are offered it at the printed price. Take it, or press Skip and it simply stays with the bank for someone else to land on later.'},
+  {sel:'#view .card',tab:'deeds',title:'Rent and colour sets',
+   body:'Owning a property earns rent when others land on it. Own every property of one colour and the rent on those spaces doubles immediately, before you build anything at all.'},
+  {sel:'#view .card',tab:'deeds',title:'Houses and hotels',
+   body:'With a full colour set you can build. Each house multiplies the rent sharply, and the fifth building becomes a hotel. Tap any deed you own to build on it — one property at a time, no even-build rule.'},
+  {sel:'#view .card',tab:'deeds',title:'Skyscrapers',
+   body:'One tier above the hotel, and unique to this game. A skyscraper costs the same as another house and pays about 1.6 times hotel rent — the most expensive thing you can land on. Switch them off before the game if you would rather stop at hotels.'},
+  {sel:'#view .card',tab:'deeds',title:'Mortgaging',
+   body:'Short of cash? Mortgage a deed for half its price. It stops earning rent until you pay it back, and lifting it costs 10% on top. Sell any buildings on it first.'},
+  {sel:'#view .card',tab:'deeds',title:'Your job',
+   body:'Everyone picks a job from five offers at the start. It bends one rule permanently in your favour — cheaper building, less rent paid, better mortgages — for the whole game.'},
+  {sel:'#view .card',tab:'deeds',title:'Payday',
+   body:'Your job also pays a bonus every single time you pass GO, on top of the $200 salary. Some are flat, some grow with what you own. This card shows your rule and what it is worth right now.'},
+  {sel:'#view .card',tab:'deeds',title:'Getting promoted',
+   body:'On your third lap your payday multiplies by one and a half; on your sixth it doubles. A job that looked small early becomes the reason you win late.'},
+  {sel:'#boardRest',tab:'board',title:'The market, and Free Parking',
+   body:'A market index drifts every round and scales everyone\u2019s rent between 0.7x and 1.35x — boom rounds are when hotels pay. Taxes and fees pile up on Free Parking for whoever lands there.'},
   {sel:'#boardHost',tab:'board',title:'The board',
-   body:'All 40 spaces with every player’s piece and name tag. Pieces glide as they move and flash where they land. Tap any space to read its title deed.'},
-  {sel:'#boardRest',tab:'board',title:'The market',
-   body:'A market index drifts each round and scales all rent between ×0.70 and ×1.35. Boom rounds reward hotels; a slump is the moment to buy.'},
-  {sel:'#view .card',tab:'deeds',title:'Deeds and colour sets',
-   body:'Everyone’s holdings. Own a full colour set and its bare rent doubles and you may build — one property at a time, with no need to raise the whole street evenly.'},
-  {sel:'#view .card',tab:'bank',title:'The bank',
-   body:'Borrow up to $600 at 10% a lap, or buy rent insurance to halve your next rent. The ledger below ranks everyone by net worth.'},
+   body:'Every space with each player\u2019s piece on it. Tap any space to read its full title deed — rents at every level, mortgage value, building cost. Flat or 3D is up to you.'},
+  {sel:'#view .card',tab:'bank',title:'Loans and insurance',
+   body:'Borrow up to $600, repaid whenever you like but growing 10% each lap. Rent insurance halves the next rent you have to pay. Both are optional and both are switched on in setup.'},
+  {sel:'#view .card',tab:'turn',title:'Jail, and the cards',
+   body:'In jail you can roll doubles, pay $50, or spend a Get Out of Jail Free card. Chance and Community Chest are drawn automatically when you land on them, and any money moves itself.'},
+  {sel:'#view .card',tab:'turn',title:'Trades and alliances',
+   body:'Trade deeds and cash with anyone — both sides confirm before it goes through. An alliance goes further: half rent between the two of you, a tenth of what your ally collects from everyone else, and a shared win if you outlast the table.'},
+  {sel:'#chatFab',tab:'turn',title:'Talking to the table',
+   body:'Chat lives behind this button. Online, you can also open a voice call from here so everyone can talk while they play.'},
   {sel:'#view .card',tab:'log',title:'The log',
-   body:'Every transaction, colour-coded: money in, money out, deeds, cards, jail. Online it updates live for everyone, so nobody has to take anyone’s word for it.'},
-  {sel:'#btnMenu',tab:'turn',title:'Everything else',
-   body:'The menu holds the rules, the full job list, twelve colour palettes and a bug report that attaches the game state. That is the tour — go and win.'}
+   body:'Every dollar that moves is recorded here, colour-coded and live. If anyone doubts a number, this is the receipt.'},
+  {sel:'#view .card',tab:'settings',title:'Making it yours',
+   body:'Twelve palettes, 24 pieces, plain-English wording, and a lightweight mode that strips out animation. Set it up however suits your table.'},
+  {sel:'#actionbar',tab:'turn',title:'That is the whole game',
+   body:'Roll, buy, build, collect. The app keeps the books; you play. You can run this tour again any time from Setup.'}
 ];
 function startTutorial(){
   if(!G||G.over){ toast('Start a game first — the tour runs over the real table.'); return; }
@@ -4072,6 +4314,8 @@ function load(){
       }catch(e){ await alertModal('Could not join',`<p>${esc(e.message)}</p>`); }
     })();
   }
+  document.documentElement.classList.toggle('lite',!!UI.lite);
+  if(UI.lite) UI.iso=false;
   Account.restore();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
