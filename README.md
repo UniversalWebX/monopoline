@@ -78,11 +78,10 @@ agrees space for space with a physical board sitting next to it.
 Everything a property game normally needs — deeds, colour sets, houses and hotels, mortgages at 10% to
 lift, trades with a confirmation step, jail, bankruptcy with forced liquidation, and a live transaction log — plus:
 
-- **Jobs.** Everyone picks from **five offers** out of a deck of **twenty-nine** (Architect builds 25%
-  cheaper, Barrister pays 20% less rent, Surveyor buys deeds 10% under list, Notary gets better mortgage
-  terms, Diplomat caps any rent at $250, Toll Keeper charges rivals at GO, Cartographer swaps places with
-  anyone, Speculator rides the market index…). Each pays a bonus on every GO and **promotes** on the 3rd
-  and 6th lap to ×1.5 then ×2. Any job can be switched off before the game so it never appears.
+- **Jobs.** Everyone picks from **five offers** out of a deck of **twenty-nine**, all rebalanced to sit
+  in a $20–45 payday band with gentler effects (Architect builds 15% cheaper, Barrister pays 12% less rent,
+  Diplomat caps any rent at $350, Toll Keeper charges rivals $15 at GO…). Each pays a bonus on every GO and
+  **promotes** on the 3rd and 6th lap to ×1.5 then ×2. Any job can be switched off before the game.
 - **Alliances.** Two players can strike a pact: half rent between them, a 10% tithe on what either
   collects from outsiders, and a **shared victory** if the pair outlast the table. Breaking it costs $150
   to the jilted ally. One pact per player; it dissolves on bankruptcy. Online, the offer is answered on
@@ -126,6 +125,10 @@ public/icon.svg
 | `POST` | `/api/rooms/:code/title` | host renames the table |
 | `POST` | `/api/rooms/:code/pact` | accept or decline an alliance offer |
 | `POST` | `/api/rooms/:code/say` | table chat |
+| `POST` | `/api/rooms/:code/signal` | relay one WebRTC message to one peer |
+| `POST` | `/api/rooms/:code/voice` | join or leave the voice call |
+| `POST` | `/api/auth/register` | `login` | `me` | `prefs` | `result` | accounts |
+| `POST` | `/api/admin/announce` | `blackout` | moderator broadcasts (needs `ADMIN_KEY` if set) |
 | `POST` | `/api/report` | file a bug report |
 | `GET` | `/api/reports?key=…` | read reports back (needs `ADMIN_KEY`) |
 
@@ -159,3 +162,42 @@ Typing `/consolejeff` into table talk opens a hidden console. It edits anything 
 Every change is written to the table log as a `Console` entry, so nothing happens silently. The command
 itself is never broadcast or logged. In an online game changes can only be applied on your turn, since
 the table rejects writes from anyone else.
+
+## Accounts
+
+Optional. Sign in and your name, piece, colour and palette follow you between devices, and a
+lifetime tally of games and wins is kept.
+
+Passwords are hashed with **scrypt** and a per-user salt; the plain password is never stored.
+Login returns the same message whether the name exists or not, so accounts cannot be enumerated.
+
+Accounts live in `DATA_DIR/users.json` (`DATA_DIR` defaults to `./data`). **On Render's free tier the
+filesystem is ephemeral, so accounts reset on every deploy** — attach a Render disk and point
+`DATA_DIR` at it to keep them.
+
+## Voice chat
+
+Online tables can open a voice call from the chat popup. It is a WebRTC mesh: every player in the call
+holds one peer connection to each other, and the server only relays offers, answers and ICE candidates —
+audio never touches it. Needs HTTPS (Render provides it) and microphone permission. Lightweight mode
+turns it off.
+
+## Modes
+
+Under the **Setup** tab:
+
+- **Easy words** — rewrites the interface into plain language, so deeds become property cards and
+  mortgages become borrowing.
+- **Lightweight** — no animations, flat board, no voice. Everything battery-hungry is switched off.
+- **Developer** — unlocks the console. With it off, `/consolejeff` does nothing.
+
+## Moderator powers
+
+The console's **Server** tab reaches every table on the server:
+
+- **Announcement** — a banner on every player's screen.
+- **Reset** — covers every screen with *"Reload, Moderators have reset the server."*
+
+Both are gated by `ADMIN_KEY` **when that variable is set**. Leave it unset only on a server you own,
+since without it anyone who finds the endpoint can use them. Set it in Render's environment and enter
+the same value in the console.

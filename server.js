@@ -28,10 +28,14 @@ const reports = [];
    production; on an ephemeral filesystem accounts reset on redeploy. */
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
-let users = {};
+let users = Object.create(null);
 try {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (fs.existsSync(USERS_FILE)) users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+  if (fs.existsSync(USERS_FILE)) {
+    // Object.create(null): a plain {} would report "constructor", "toString"
+    // and friends as existing accounts.
+    users = Object.assign(Object.create(null), JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')));
+  }
 } catch (e) { console.log('[accounts] could not read store:', e.message); }
 let saveTimer = null;
 function saveUsers() {
@@ -186,13 +190,27 @@ async function api(req, res, url) {
       if (pass.length < 4) return send(res, 400, { error: 'Use at least 4 characters for the password.' });
       if (Object.keys(users).length >= 5000) return send(res, 503, { error: 'The account list is full.' });
       const key = userKey(name);
-      if (users[key]) return send(res, 409, { error: 'That name is taken.' });
+      const existing = users[key];
+      if (existing) {
+        // same person submitting twice (slow cold start, double tap, proxy retry)
+        const attempt = hashPass(pass, existing.salt);
+        const same = attempt.length === existing.hash.length &&
+          crypto.timingSafeEqual(Buffer.from(attempt, 'hex'), Buffer.from(existing.hash, 'hex'));
+        if (same) {
+          existing.token = newToken();
+          saveUsers();
+          console.log('[accounts] repeat register for ' + existing.name + ' -> signed in');
+          return send(res, 200, { token: existing.token, user: publicUser(existing), existing: true });
+        }
+        return send(res, 409, { error: 'That name is taken. If it is yours, use Sign in.' });
+      }
       const salt = crypto.randomBytes(16).toString('hex');
       users[key] = {
         name, salt, hash: hashPass(pass, salt), token: newToken(),
         created: new Date().toISOString(), stats: { games: 0, wins: 0 }, prefs: {}
       };
       saveUsers();
+      console.log('[accounts] created ' + name + ' (' + Object.keys(users).length + ' total)');
       return send(res, 200, { token: users[key].token, user: publicUser(users[key]) });
     }
 
@@ -249,6 +267,39 @@ async function api(req, res, url) {
     }
 
     return send(res, 404, { error: 'Unknown account endpoint.' });
+  }
+
+  // ── moderator broadcasts ───────────────────────────────────
+  // These reach every table on the server, so they are gated by ADMIN_KEY
+  // when one is configured. Leave it unset only on a server you own.
+  if (seg[1] === 'admin' && method === 'POST') {
+    const body = await readJson(req, 8192);
+    const key = process.env.ADMIN_KEY;
+    if (key && body.key !== key) return send(res, 403, { error: 'Bad moderator key.' });
+
+    const reach = () => {
+      let tables = 0, people = 0;
+      for (const room of rooms.values()) { tables++; people += room.clients.size; }
+      return { tables, people };
+    };
+
+    if (seg[2] === 'announce') {
+      const text = clean(body.text, 240);
+      if (!text) return send(res, 400, { error: 'Nothing to announce.' });
+      for (const room of rooms.values()) broadcast(room, 'announce', { text, at: Date.now() });
+      const r = reach();
+      console.log(`[announce] ${text} -> ${r.tables} tables, ${r.people} devices`);
+      return send(res, 200, Object.assign({ ok: true }, r));
+    }
+
+    if (seg[2] === 'blackout') {
+      const r = reach();
+      for (const room of rooms.values()) broadcast(room, 'blackout', { at: Date.now() });
+      console.log(`[blackout] every device asked to reload -> ${r.tables} tables, ${r.people} devices`);
+      return send(res, 200, Object.assign({ ok: true }, r));
+    }
+
+    return send(res, 404, { error: 'Unknown moderator action.' });
   }
 
   // GET /api/reports?key=... -> read them back; only with ADMIN_KEY set
