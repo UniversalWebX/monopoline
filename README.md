@@ -86,7 +86,8 @@ lift, trades with a confirmation step, jail, bankruptcy with forced liquidation,
   collects from outsiders, and a **shared victory** if the pair outlast the table. Breaking it costs $150
   to the jilted ally. One pact per player; it dissolves on bankruptcy. Online, the offer is answered on
   the ally's own device through a server-merged endpoint, since the responder is not the current player.
-- **A guided tour.** Fourteen coach marks over the live interface, offered on the first game and available
+- **A guided tour.** Twenty-two coach marks over the live interface covering the rules as well as the
+  screen — payday, promotion, skyscrapers, mortgages, the market, alliances — offered on the first game and available
   any time from the menu.
 - **Twelve palettes**, each with light and dark variants, plus **24 playing pieces** and a bench of
   20 colours — every player picks their own shape and colour, so no two tables look alike.
