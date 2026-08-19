@@ -23,6 +23,36 @@ const rooms = new Map();
     what survives on a host with an ephemeral disk. */
 const reports = [];
 
+/* ── accounts ──────────────────────────────────────────────────
+   Small on-disk store. DATA_DIR should point at a mounted disk in
+   production; on an ephemeral filesystem accounts reset on redeploy. */
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+let users = {};
+try {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (fs.existsSync(USERS_FILE)) users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+} catch (e) { console.log('[accounts] could not read store:', e.message); }
+let saveTimer = null;
+function saveUsers() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { fs.writeFileSync(USERS_FILE, JSON.stringify(users)); }
+    catch (e) { console.log('[accounts] could not write store:', e.message); }
+  }, 250);
+}
+const hashPass = (pass, salt) => crypto.scryptSync(String(pass), salt, 64).toString('hex');
+const userKey = name => String(name || '').trim().toLowerCase();
+const validName = n => /^[a-zA-Z0-9 _-]{3,14}$/.test(String(n || '').trim());
+function publicUser(u) {
+  return { name: u.name, prefs: u.prefs || {}, stats: u.stats || { games: 0, wins: 0 }, since: u.created };
+}
+function userByToken(token) {
+  if (!token) return null;
+  for (const k of Object.keys(users)) if (users[k].token === token) return users[k];
+  return null;
+}
+
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
 function newCode() {
   let c;
@@ -77,6 +107,15 @@ function broadcast(room, event, payload, exceptToken) {
     if (exceptToken && c.token === exceptToken) continue;
     try { c.res.write(frame); } catch (e) { /* dropped; the stream's close handler cleans up */ }
   }
+}
+function sendTo(room, pid, event, payload) {
+  const frame = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
+  let sent = 0;
+  for (const c of room.clients) {
+    if (c.pid !== pid) continue;
+    try { c.res.write(frame); sent++; } catch (e) {}
+  }
+  return sent;
 }
 const roster = room => ({
   title: room.title || '',
@@ -133,6 +172,83 @@ async function api(req, res, url) {
     // Render surfaces stdout in the dashboard, so this is where reports land.
     console.log(`[bug] ${entry.at} | ${entry.from}${entry.code ? ' @' + entry.code : ''} | ${entry.text.replace(/\s+/g, ' ').slice(0, 400)}`);
     return send(res, 200, { ok: true, filed: reports.length });
+  }
+
+  // ── accounts ───────────────────────────────────────────────
+  if (seg[1] === 'auth') {
+    const what = seg[2];
+
+    if (what === 'register' && method === 'POST') {
+      const body = await readJson(req, 4096);
+      const name = String(body.name || '').trim();
+      const pass = String(body.pass || '');
+      if (!validName(name)) return send(res, 400, { error: 'Names are 3–14 characters: letters, numbers, spaces, - and _.' });
+      if (pass.length < 4) return send(res, 400, { error: 'Use at least 4 characters for the password.' });
+      if (Object.keys(users).length >= 5000) return send(res, 503, { error: 'The account list is full.' });
+      const key = userKey(name);
+      if (users[key]) return send(res, 409, { error: 'That name is taken.' });
+      const salt = crypto.randomBytes(16).toString('hex');
+      users[key] = {
+        name, salt, hash: hashPass(pass, salt), token: newToken(),
+        created: new Date().toISOString(), stats: { games: 0, wins: 0 }, prefs: {}
+      };
+      saveUsers();
+      return send(res, 200, { token: users[key].token, user: publicUser(users[key]) });
+    }
+
+    if (what === 'login' && method === 'POST') {
+      const body = await readJson(req, 4096);
+      const u = users[userKey(body.name)];
+      const pass = String(body.pass || '');
+      // compare in constant time, and do the work even when the user is unknown
+      const salt = u ? u.salt : 'x'.repeat(32);
+      const attempt = hashPass(pass, salt);
+      const expect = u ? u.hash : attempt.replace(/./g, '0');
+      const ok = u && attempt.length === expect.length &&
+        crypto.timingSafeEqual(Buffer.from(attempt, 'hex'), Buffer.from(expect, 'hex'));
+      if (!ok) return send(res, 401, { error: 'Wrong name or password.' });
+      u.token = newToken();
+      saveUsers();
+      return send(res, 200, { token: u.token, user: publicUser(u) });
+    }
+
+    if (what === 'me' && method === 'GET') {
+      const u = userByToken(url.searchParams.get('token'));
+      if (!u) return send(res, 401, { error: 'Signed out.' });
+      return send(res, 200, { user: publicUser(u) });
+    }
+
+    if (what === 'prefs' && method === 'POST') {
+      const body = await readJson(req, 4096);
+      const u = userByToken(body.token);
+      if (!u) return send(res, 401, { error: 'Signed out.' });
+      u.prefs = u.prefs || {};
+      if (typeof body.piece === 'string') u.prefs.piece = clean(body.piece, 16);
+      if (/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) u.prefs.color = body.color;
+      if (typeof body.skin === 'string') u.prefs.skin = clean(body.skin, 16);
+      saveUsers();
+      return send(res, 200, { user: publicUser(u) });
+    }
+
+    if (what === 'result' && method === 'POST') {
+      const body = await readJson(req, 4096);
+      const u = userByToken(body.token);
+      if (!u) return send(res, 401, { error: 'Signed out.' });
+      u.stats = u.stats || { games: 0, wins: 0 };
+      u.stats.games++;
+      if (body.won) u.stats.wins++;
+      saveUsers();
+      return send(res, 200, { user: publicUser(u) });
+    }
+
+    if (what === 'logout' && method === 'POST') {
+      const body = await readJson(req, 4096);
+      const u = userByToken(body.token);
+      if (u) { u.token = null; saveUsers(); }
+      return send(res, 200, { ok: true });
+    }
+
+    return send(res, 404, { error: 'Unknown account endpoint.' });
   }
 
   // GET /api/reports?key=... -> read them back; only with ADMIN_KEY set
@@ -194,13 +310,19 @@ async function api(req, res, url) {
     const client = { res, token, pid: seat.pid };
     room.clients.add(client);
     touch(room);
-    res.write(`event: sync\ndata: ${JSON.stringify({ v: room.v, state: room.state, roster: roster(room) })}\n\n`);
+    res.write(`event: sync\ndata: ${JSON.stringify({ v: room.v, state: room.state, roster: roster(room), voice: room.voice || [] })}\n\n`);
     broadcast(room, 'roster', roster(room));
     const beat = setInterval(() => { try { res.write(': ping\n\n'); } catch (e) {} }, 25000);
     const drop = () => {
       clearInterval(beat);
       room.clients.delete(client);
-      if (rooms.has(code)) broadcast(room, 'roster', roster(room));
+      if (!rooms.has(code)) return;
+      const stillHere = [...room.clients].some(c => c.pid === seat.pid);
+      if (!stillHere && room.voice && room.voice.includes(seat.pid)) {
+        room.voice = room.voice.filter(pid => pid !== seat.pid);
+        broadcast(room, 'voice', { voice: room.voice });
+      }
+      broadcast(room, 'roster', roster(room));
     };
     req.on('close', drop); req.on('error', drop);
     return;
@@ -255,6 +377,33 @@ async function api(req, res, url) {
     touch(room);
     broadcast(room, 'state', { v: room.v, state: st, by: seat.pid });
     return send(res, 200, { v: room.v, state: st });
+  }
+
+  // POST /api/rooms/:code/signal -> relay one WebRTC message to one peer.
+  // The server never inspects the payload; it only routes it.
+  if (action === 'signal' && method === 'POST') {
+    const body = await readJson(req, 64 * 1024);
+    const seat = room.players.find(p => p.token === body.token);
+    if (!seat) return send(res, 403, { error: 'Not a member of this table.' });
+    const to = Number(body.to);
+    if (!Number.isInteger(to)) return send(res, 400, { error: 'No recipient.' });
+    touch(room);
+    const sent = sendTo(room, to, 'signal', { from: seat.pid, kind: body.kind, data: body.data });
+    return send(res, 200, { delivered: sent });
+  }
+
+  // POST /api/rooms/:code/voice -> announce joining or leaving the call
+  if (action === 'voice' && method === 'POST') {
+    const body = await readJson(req, 4096);
+    const seat = room.players.find(p => p.token === body.token);
+    if (!seat) return send(res, 403, { error: 'Not a member of this table.' });
+    room.voice = room.voice || [];
+    const on = !!body.on;
+    room.voice = room.voice.filter(pid => pid !== seat.pid);
+    if (on) room.voice.push(seat.pid);
+    touch(room);
+    broadcast(room, 'voice', { voice: room.voice });
+    return send(res, 200, { voice: room.voice });
   }
 
   // POST /api/rooms/:code/pact -> answer an alliance offer.

@@ -325,6 +325,14 @@ table.rt tr.on td{color:var(--accent);font-weight:600}
   .ring3{display:none}
 }
 
+/* isometric view */
+.isowrap{position:relative}
+.isowrap svg{width:100%;height:auto}
+.viewtoggle{display:flex;gap:6px;justify-content:flex-end;padding:0 2px 8px}
+.viewtoggle button{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
+  border:1px solid var(--line);padding:4px 11px;border-radius:var(--pill)}
+.viewtoggle button[aria-pressed="true"]{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+
 /* board pawns glide between spaces */
 .pawn{transition:transform .34s cubic-bezier(.25,.9,.3,1)}
 .pawn .disc{transition:r .2s ease}
@@ -339,6 +347,31 @@ table.rt tr.on td{color:var(--accent);font-weight:600}
 
 /* confetti canvas for the win screen */
 #confetti{position:fixed;inset:0;z-index:95;pointer-events:none}
+
+/* chat popup */
+#chatFab{position:fixed;right:14px;bottom:calc(126px + env(safe-area-inset-bottom));z-index:88;
+  width:52px;height:52px;border-radius:var(--pill);background:var(--panel);border:1px solid var(--line2);
+  box-shadow:var(--shadow);display:grid;place-items:center;color:var(--accent)}
+#chatFab:hover{border-color:var(--accent)}
+#chatFab .badge-n{position:absolute;top:-3px;right:-3px;min-width:19px;height:19px;border-radius:var(--pill);
+  background:var(--bad);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 5px;font-weight:600}
+#chatPop{position:fixed;right:14px;bottom:calc(186px + env(safe-area-inset-bottom));z-index:89;
+  width:min(340px,calc(100vw - 28px));max-height:min(460px,60vh);background:var(--panel);
+  border:1px solid var(--line2);border-radius:var(--r3);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;overflow:hidden;animation:popIn .16s ease-out}
+#chatPop .hd{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+#chatPop .hd h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+  font-family:Bahnschrift,'DIN Alternate','Arial Narrow',system-ui,sans-serif}
+#chatPop .body{padding:11px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:7px}
+#chatPop .foot{padding:10px;border-top:1px solid var(--line);display:flex;gap:7px}
+#chatPop .foot input{flex:1}
+.voicebar{display:flex;align-items:center;gap:7px;padding:8px 11px;border-bottom:1px solid var(--line);
+  background:var(--panel2);flex-wrap:wrap}
+.voicepip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:var(--pill);
+  border:1px solid var(--line2);color:var(--dim)}
+.voicepip.on{border-color:var(--good);color:var(--good)}
+.voicepip .lvl{width:6px;height:6px;border-radius:50%;background:currentColor}
+@media(prefers-reduced-motion:reduce){#chatPop{animation:none}}
 
 /* tutorial coach marks */
 #coach{position:fixed;inset:0;z-index:120}
@@ -404,6 +437,9 @@ table.rt tr.on td{color:var(--accent);font-weight:600}
   </div>
 </div>
 <div id="fxLayer" aria-hidden="true"></div>
+<button id="chatFab" hidden aria-label="Open table talk"></button>
+<div id="chatPop" hidden></div>
+<div id="voiceAudio" hidden></div>
 <div id="modalRoot"></div>
 <div id="toastRoot"></div>
 
@@ -706,63 +742,63 @@ const JAIL=10;
 /* ---------- jobs ---------- */
 const JOBS=[
  {id:'architect',n:'Architect',tag:'Builds cheap',icon:'gear',
-  d:'Houses, hotels and skyscrapers cost you 25% less.',pay:'$15 per building you own'},
+  d:'Houses, hotels and skyscrapers cost you 15% less.',pay:'$8 per building you own'},
  {id:'broker',n:'Broker',tag:'Commission',icon:'bolt',
-  d:'Collect $60 from the bank every time another player buys a deed from the bank.',pay:'$100 flat'},
+  d:'Collect $30 from the bank whenever another player buys a deed from the bank.',pay:'$45 flat'},
  {id:'conductor',n:'Conductor',tag:'Rides the line',icon:'anchor',
-  d:'Your station rent is doubled. Once per lap you may ride free to any station.',pay:'$40 per station'},
+  d:'Your railroad rent is half again as much. Once per lap you may ride free to any railroad.',pay:'$20 per railroad'},
  {id:'landlord',n:'Landlord',tag:'Skims the top',icon:'crown',
-  d:'Every rent you collect is increased by 15%.',pay:'$60 flat'},
+  d:'Every rent you collect is increased by 10%.',pay:'$30 flat'},
  {id:'barrister',n:'Barrister',tag:'Reads the fine print',icon:'key',
-  d:'Every rent you pay is reduced by 20%. You always leave jail free.',pay:'$80 flat'},
+  d:'Every rent you pay is reduced by 12%. You always leave jail free.',pay:'$40 flat'},
  {id:'gambler',n:'Gambler',tag:'Presses luck',icon:'spire',
-  d:'Rolling doubles pays $150, and you collect a $60 bonus each time you leave jail.',pay:'$40 flat'},
+  d:'Rolling doubles pays $70, and you collect $30 each time you leave jail.',pay:'$20 flat'},
  {id:'gridbaron',n:'Grid Baron',tag:'Owns the wires',icon:'lantern',
-  d:'Your utilities charge 10× / 20× the roll instead of 4× / 10×.',pay:'$75 per utility'},
+  d:'Your utilities charge 6x / 12x the roll instead of 4x / 10x.',pay:'$35 per utility'},
  {id:'trainop',n:'Train Operator',tag:'Runs the line',icon:'anchor',
-  d:'On your turn, before rolling, you may ride to any railroad for a $75 fare — as often as you like.',pay:'$80 flat'},
+  d:'Before rolling you may ride to any railroad for a $90 fare, as often as you like.',pay:'$40 flat'},
  {id:'tycoon',n:'Tycoon',tag:'Builds empires',icon:'crown',
-  d:'Rent from your properties with 4 or more houses is increased by 25%.',pay:'$90 flat'},
+  d:'Rent from your properties with four or more houses is increased by 15%.',pay:'$45 flat'},
  {id:'insurer',n:'Insurer',tag:'Hedges everything',icon:'key',
-  d:'Rent insurance costs you $60 instead of $120, and you start the game holding one.',pay:'$70 flat'},
+  d:'Rent insurance costs you $80 instead of $120, and you start the game holding one.',pay:'$35 flat'},
  {id:'drifter',n:'Drifter',tag:'Never quite still',icon:'wave',
-  d:'Once per lap you may nudge your token up to three spaces in either direction.',pay:'$60 flat'},
+  d:'Once per lap you may nudge your token up to two spaces in either direction.',pay:'$30 flat'},
  {id:'accountant',n:'Accountant',tag:'Reads the code',icon:'gear',
-  d:'Income Tax and Luxury Tax cost you 40% less.',pay:'$85 flat'},
+  d:'Income Tax and Luxury Tax cost you 25% less.',pay:'$45 flat'},
  {id:'bailiff',n:'Bailiff',tag:'Turns the key',icon:'lantern',
-  d:'Collect $75 from the bank whenever any other player is sent to jail.',pay:'$60 flat'},
+  d:'Collect $40 from the bank whenever another player is sent to jail.',pay:'$30 flat'},
  {id:'mogul',n:'Mogul',tag:'Collects sets',icon:'anchor',
-  d:'Your payday scales with complete colour sets rather than a flat fee.',pay:'$120 per full set'},
+  d:'Your payday scales with complete colour sets rather than a flat fee.',pay:'$60 per full set'},
  {id:'surveyor',n:'Surveyor',tag:'Knows the ground',icon:'key',
-  d:'Every deed you buy from the bank costs you 10% less.',pay:'$70 flat'},
+  d:'Every deed you buy from the bank costs you 7% less.',pay:'$35 flat'},
  {id:'notary',n:'Notary',tag:'Files the paperwork',icon:'gear',
-  d:'Mortgages pay you 60% instead of half, and you lift them with no 10% premium.',pay:'$70 flat'},
- {id:'foreman',n:'Foreman',tag:'Salvages everything',icon:'bolt',
-  d:'Selling a building returns the full price you paid rather than half.',pay:'$60 flat'},
+  d:'Mortgages pay you 55% instead of half, and cost only 5% over to lift.',pay:'$35 flat'},
+ {id:'foreman',n:'Foreman',tag:'Salvages well',icon:'bolt',
+  d:'Selling a building returns three quarters of what you paid rather than half.',pay:'$30 flat'},
  {id:'realtor',n:'Realtor',tag:'Takes a cut',icon:'crown',
-  d:'Collect $100 from the bank every time you complete a trade.',pay:'$60 flat'},
+  d:'Collect $50 from the bank every time you complete a trade.',pay:'$30 flat'},
  {id:'nightwatch',n:'Nightwatchman',tag:'Paid by the shift',icon:'lantern',
-  d:'Collect $25 from the bank at the start of each of your turns.',pay:'$40 flat'},
+  d:'Collect $15 from the bank at the start of each of your turns.',pay:'$20 flat'},
  {id:'speculator',n:'Speculator',tag:'Rides the index',icon:'wave',
-  d:'When the market rises you gain $10 a point; when it falls you lose $5 a point.',pay:'$50 flat'},
+  d:'When the market rises you gain $6 a point; when it falls you lose $4 a point.',pay:'$25 flat'},
  {id:'philanthropist',n:'Philanthropist',tag:'Writes it off',icon:'spire',
-  d:'The bank refunds a quarter of every rent you pay.',pay:'$70 flat'},
+  d:'The bank refunds 15% of every rent you pay.',pay:'$35 flat'},
  {id:'tollkeeper',n:'Toll Keeper',tag:'Owns the gate',icon:'anchor',
-  d:'Every other player pays you $25 as they pass GO.',pay:'$50 flat'},
+  d:'Every other player pays you $15 as they pass GO.',pay:'$25 flat'},
  {id:'heir',n:'Heir',tag:'Born into it',icon:'crown',
-  d:'You begin the game with an extra $600 in the bank.',pay:'$40 flat'},
+  d:'You begin the game with an extra $300 in the bank.',pay:'$20 flat'},
  {id:'taxcollector',n:'Tax Collector',tag:'Takes a share',icon:'gear',
-  d:'Collect half of every tax another player pays to the bank.',pay:'$60 flat'},
+  d:'Collect a third of every tax another player pays to the bank.',pay:'$30 flat'},
  {id:'locksmith',n:'Locksmith',tag:'Keeps a copy',icon:'key',
-  d:'Your Get Out of Jail Free cards are never used up.',pay:'$70 flat'},
+  d:'Your Get Out of Jail Free cards are never used up.',pay:'$35 flat'},
  {id:'cartographer',n:'Cartographer',tag:'Redraws the map',icon:'wave',
-  d:'Once per lap you may swap places on the board with any other player.',pay:'$60 flat'},
+  d:'Once per lap you may swap places on the board with another player.',pay:'$30 flat'},
  {id:'unionboss',n:'Union Boss',tag:'Takes the levy',icon:'bolt',
-  d:'Collect $25 from the bank whenever any other player puts up a building.',pay:'$60 flat'},
- {id:'financier',n:'Financier',tag:'Borrows for free',icon:'lantern',
-  d:'Your bank loans never accrue interest.',pay:'$75 flat'},
+  d:'Collect $15 from the bank whenever another player puts up a building.',pay:'$30 flat'},
+ {id:'financier',n:'Financier',tag:'Borrows cheap',icon:'lantern',
+  d:'Your bank loans accrue 5% a lap instead of 10%.',pay:'$40 flat'},
  {id:'diplomat',n:'Diplomat',tag:'Negotiates hard',icon:'spire',
-  d:'No single rent payment you make can exceed $250.',pay:'$80 flat'}
+  d:'No single rent payment you make can exceed $350.',pay:'$40 flat'}
 ];
 /* how many jobs each player chooses between in the draft */
 const OFFER_COUNT=5;
@@ -781,7 +817,8 @@ const PALETTE=['#D9483C','#3F8FE0','#2E9E63','#F2A007','#B76FE0','#33A79E','#D95
 const PTOKENS=['spire','anchor','key','lantern','gear','bolt','crown','wave',
   'tophat','boot','ship','car','cat','dog','rocket','diamond',
   'flame','leaf','moon','star','bell','trophy','umbrella','fish'];
-const UI={screen:'home',tab:'turn',pendingState:null,modalDepth:0};
+const UI={screen:'home',tab:'turn',pendingState:null,modalDepth:0,
+  iso:store.get('monopoline.iso')==='1',chatOpen:false,chatUnread:0};
 
 function defaultCfg(){return{
   start:1500, salary:200, freeParking:true, skyscrapers:true,
@@ -833,13 +870,17 @@ const Net={
     this.status='connecting';
     es.addEventListener('open',()=>{ this.status='live'; renderNetChip(); });
     es.addEventListener('sync',e=>{ const d=JSON.parse(e.data); this.roster=d.roster; this.v=d.v;
+      if(d.voice) Voice.sync(d.voice);
       if(d.state) this.adopt(d.state,d.v); else render(); });
     es.addEventListener('state',e=>{ const d=JSON.parse(e.data); this.adopt(d.state,d.v); });
     es.addEventListener('roster',e=>{ this.roster=JSON.parse(e.data);
       if(this.roster.title!=null) this.title=this.roster.title; render(); });
     es.addEventListener('say',e=>{ const d=JSON.parse(e.data);
       this.chat.push(d); if(this.chat.length>60) this.chat.shift();
-      if(UI.tab==='turn'||UI.tab==='log') render(); else toast(`${d.name}: ${d.text}`); });
+      if(!UI.chatOpen&&d.pid!==this.pid){ UI.chatUnread=(UI.chatUnread||0)+1; toast(`${d.name}: ${d.text}`); }
+      renderChat(); });
+    es.addEventListener('signal',e=>Voice.onSignal(JSON.parse(e.data)));
+    es.addEventListener('voice',e=>Voice.sync(JSON.parse(e.data).voice||[]));
     es.onerror=()=>{ this.status='reconnecting'; renderNetChip(); };
   },
   /* Adopt a state pushed by another device. Never yank the table out from under
@@ -922,6 +963,17 @@ const Net={
       if(r&&r.roster){ this.roster=r.roster; if(r.roster.title!=null) this.title=r.roster.title; }
     }catch(e){ /* the SSE stream will catch us up */ }
   },
+  async signal(to,kind,data){
+    if(!this.online) return;
+    try{ await this.api('rooms/'+this.code+'/signal',{method:'POST',body:{token:this.token,to,kind,data}}); }
+    catch(e){}
+  },
+  async voice(on){
+    if(!this.online) return;
+    try{ const r=await this.api('rooms/'+this.code+'/voice',{method:'POST',body:{token:this.token,on}});
+      Voice.sync(r.voice||[]); }
+    catch(e){ toast('Could not reach the table.'); }
+  },
   async pact(kind){
     try{
       const r=await this.api('rooms/'+this.code+'/pact',{method:'POST',body:{token:this.token,kind}});
@@ -942,6 +994,7 @@ const Net={
     catch(e){ toast(e.message); }
   },
   leave(){
+    if(Voice.on) Voice.leave();
     if(this.es){ this.es.close(); this.es=null; }
     this.mode='local'; this.code=null; this.pid=null; this.token=null; this.host=false; this.title='';
     this.roster={players:[],online:[]}; this.chat=[]; this.status='';
@@ -1115,40 +1168,40 @@ function paydayBonus(p){
   const props=deedsOf(p);
   let base=0;
   switch(p.job){
-    case 'architect': base=15*props.reduce((a,i)=>a+(BOARD[i].t==='prop'?G.own[i].houses:0),0); break;
-    case 'broker': base=100; break;
-    case 'conductor': base=40*props.filter(i=>BOARD[i].t==='transit').length; break;
-    case 'landlord': base=60; break;
-    case 'barrister': base=80; break;
-    case 'gambler': base=40; break;
-    case 'gridbaron': base=75*props.filter(i=>BOARD[i].t==='utility').length; break;
-    case 'trainop': base=80; break;
-    case 'tycoon': base=90; break;
-    case 'insurer': base=70; break;
-    case 'drifter': base=60; break;
-    case 'accountant': base=85; break;
-    case 'bailiff': base=60; break;
+    case 'architect': base=8*props.reduce((a,i)=>a+(BOARD[i].t==='prop'?G.own[i].houses:0),0); break;
+    case 'broker': base=45; break;
+    case 'conductor': base=20*props.filter(i=>BOARD[i].t==='transit').length; break;
+    case 'landlord': base=30; break;
+    case 'barrister': base=40; break;
+    case 'gambler': base=20; break;
+    case 'gridbaron': base=35*props.filter(i=>BOARD[i].t==='utility').length; break;
+    case 'trainop': base=40; break;
+    case 'tycoon': base=45; break;
+    case 'insurer': base=35; break;
+    case 'drifter': base=30; break;
+    case 'accountant': base=45; break;
+    case 'bailiff': base=30; break;
     case 'mogul':
-      base=120*Object.keys(GROUPS).filter(g=>g!=='transit'&&g!=='utility'&&ownsSet(p,g)).length; break;
-    case 'surveyor': base=70; break;
-    case 'notary': base=70; break;
-    case 'foreman': base=60; break;
-    case 'realtor': base=60; break;
-    case 'nightwatch': base=40; break;
-    case 'speculator': base=50; break;
-    case 'philanthropist': base=70; break;
-    case 'tollkeeper': base=50; break;
-    case 'heir': base=40; break;
-    case 'taxcollector': base=60; break;
-    case 'locksmith': base=70; break;
-    case 'cartographer': base=60; break;
-    case 'unionboss': base=60; break;
-    case 'financier': base=75; break;
-    case 'diplomat': base=80; break;
+      base=60*Object.keys(GROUPS).filter(g=>g!=='transit'&&g!=='utility'&&ownsSet(p,g)).length; break;
+    case 'surveyor': base=35; break;
+    case 'notary': base=35; break;
+    case 'foreman': base=30; break;
+    case 'realtor': base=30; break;
+    case 'nightwatch': base=20; break;
+    case 'speculator': base=25; break;
+    case 'philanthropist': base=35; break;
+    case 'tollkeeper': base=25; break;
+    case 'heir': base=20; break;
+    case 'taxcollector': base=30; break;
+    case 'locksmith': base=35; break;
+    case 'cartographer': base=30; break;
+    case 'unionboss': base=30; break;
+    case 'financier': base=40; break;
+    case 'diplomat': base=40; break;
   }
   return Math.round(base*jobMult(p));
 }
-function buildCost(p,i){ return p.job==='architect'?Math.round(BOARD[i].h*0.75):BOARD[i].h; }
+function buildCost(p,i){ return p.job==='architect'?Math.round(BOARD[i].h*0.85):BOARD[i].h; }
 
 /* ══════════ rent ══════════ */
 function econMult(){ return G.cfg.economy?clamp(1+(G.economy-100)/200,0.7,1.35):1; }
@@ -1169,11 +1222,11 @@ function rentFor(i,roll){
   }else if(s.t==='transit'){
     const n=groupIdx('transit').filter(x=>G.own[x]&&G.own[x].owner===owner.id&&!G.own[x].mortgaged).length;
     base=[0,25,50,100,200][n];
-    if(owner.job==='conductor') base*=2;
+    if(owner.job==='conductor') base=Math.round(base*1.5);
   }else if(s.t==='utility'){
     const n=groupIdx('utility').filter(x=>G.own[x]&&G.own[x].owner===owner.id&&!G.own[x].mortgaged).length;
     const hi=owner.job==='gridbaron';
-    base=roll*(n===2?(hi?20:10):(hi?10:4));
+    base=roll*(n===2?(hi?12:10):(hi?6:4));
   }
   return Math.max(0,Math.round(base*econMult()));
 }
@@ -1348,6 +1401,7 @@ function renderHome(){
     <div class="grid g2">
       <button class="btn" data-a="rules">${SVG.icon('help',17)} How it works</button>
       <button class="btn" data-a="jobsInfo">${SVG.icon('people',17)} The jobs</button>
+      <button class="btn" data-a="account">${SVG.icon('people',17)} ${Account.signedIn?esc(Account.user.name):'Sign in'}</button>
       <button class="btn" data-a="skins">${SVG.icon('palette',17)} ${esc((SKINS[currentSkin]||SKINS.ink).name)}</button>
       <button class="btn" data-a="bug">${SVG.icon('bug',17)} Report a bug</button>
     </div>
@@ -1606,7 +1660,7 @@ async function doRoll(a,b){
       p.perked=true; p.insurance=(p.insurance||0)+1;
       log(`<b>${esc(p.name)}</b> writes their own policy — one free insurance.`);
     }else if(p.job==='heir'){
-      p.perked=true; give(p,600,'Heir — inheritance');
+      p.perked=true; give(p,300,'Heir — inheritance');
     }
   }
   G.lastRoll=[a,b]; p.stats.rolls++;
@@ -1641,7 +1695,7 @@ async function doRoll(a,b){
       await alertModal('Jail','<div class="center pad"><div class="big disp">Three doubles.</div><p class="muted">Speeding. Go directly to jail.</p></div>');
       return;
     }
-    if(p.job==='gambler') give(p,150,'Gambler — doubles bonus');
+    if(p.job==='gambler') give(p,70,'Gambler — doubles bonus');
   }else{
     // A plain roll ends the extra-turn chain. Without this the counter stays
     // above zero and the turn can never be handed on.
@@ -1653,7 +1707,7 @@ async function doRoll(a,b){
 }
 function sendToJail(p){
   p.pos=JAIL; p.jail=true; p.jailTurns=0; G.doubles=0;
-  for(const q of alive()) if(q.id!==p.id&&q.job==='bailiff') give(q,75,'Bailiff — turnkey fee');
+  for(const q of alive()) if(q.id!==p.id&&q.job==='bailiff') give(q,40,'Bailiff — turnkey fee');
   buzz([25,60,25]);
   const card=$('#view .card');
   if(card&&!reducedMotion()){ card.classList.add('shakeit'); setTimeout(()=>card.classList.remove('shakeit'),520); }
@@ -1694,7 +1748,8 @@ const TIMING={land:520,walkTotal:760,stepMin:58,stepMax:150,tumble:620};
    "standing on" line. A full render per step rebuilds 40 board rows, the
    sidebar and the tab body, which is wasted work mid-animation. */
 function paintMove(p){
-  $$('#boardHost,#sideBoardHost').forEach(h=>{ if(h.dataset.sig) syncPawns(h); });
+  if(UI.iso){ $$('#boardHost,#sideBoardHost').forEach(h=>{ h.dataset.sig=''; mountBoard(h); }); }
+  else $$('#boardHost,#sideBoardHost').forEach(h=>{ if(h.dataset.sig) syncPawns(h); });
   const nameEl=$('#standingName'), idxEl=$('#standingIdx');
   if(nameEl) nameEl.textContent=BOARD[p.pos].n;
   if(idxEl) idxEl.textContent='Standing on · space '+p.pos;
@@ -1747,13 +1802,13 @@ async function passGo(p){
   if(bonus>0) give(p,bonus,`${jobById(p.job).n} payday${jobLevel(p)>1?' · Lv'+jobLevel(p):''}${doubled?' · night class ×2':''}`);
   for(const q of alive()){
     if(q.id===p.id||q.job!=='tollkeeper') continue;
-    const toll=Math.min(p.cash,25);
+    const toll=Math.min(p.cash,15);
     if(toll<=0) continue;
     p.cash-=toll; q.cash+=toll; fx.money(q,toll);
     log(`<b>${esc(p.name)}</b> pays <span class="neg num">${money(toll)}</span> to <b>${esc(q.name)}</b> · toll at GO`,'money-out');
   }
-  if(p.loan>0&&p.job!=='financier'){
-    const interest=Math.round(p.loan*0.10);
+  if(p.loan>0){
+    const interest=Math.round(p.loan*(p.job==='financier'?0.05:0.10));
     p.loan+=interest;
     log(`<b>${esc(p.name)}</b>'s loan accrues <span class="neg num">${money(interest)}</span> interest (balance ${money(p.loan)}).`);
   }
@@ -1771,9 +1826,9 @@ async function resolveSpace(p,roll){
       break;
     case 'tax':{
       let amt=s.amt;
-      if(p.job==='accountant'){ amt=Math.round(amt*0.6); log(`<b>${esc(p.name)}</b> files as an Accountant — tax reduced to <span class="num">${money(amt)}</span>.`); }
+      if(p.job==='accountant'){ amt=Math.round(amt*0.75); log(`<b>${esc(p.name)}</b> files as an Accountant — tax reduced to <span class="num">${money(amt)}</span>.`); }
       if(await payOut(p,amt,null,s.n.toLowerCase())){
-        for(const q of alive()) if(q.id!==p.id&&q.job==='taxcollector') give(q,Math.round(amt/2),'Tax Collector share');
+        for(const q of alive()) if(q.id!==p.id&&q.job==='taxcollector') give(q,Math.round(amt/3),'Tax Collector share');
       }
       break;
     }
@@ -1800,11 +1855,11 @@ async function landDeed(p,i,roll){
   const owner=byId(o.owner);
   let rent=rentFor(i,roll);
   const notes=[];
-  if(owner.job==='landlord'){ rent=Math.round(rent*1.15); notes.push('Landlord +15%'); }
-  if(owner.job==='tycoon'&&o.houses>=4){ rent=Math.round(rent*1.25); notes.push('Tycoon +25%'); }
-  if(p.job==='barrister'){ rent=Math.round(rent*0.80); notes.push('Barrister −20%'); }
+  if(owner.job==='landlord'){ rent=Math.round(rent*1.10); notes.push('Landlord +10%'); }
+  if(owner.job==='tycoon'&&o.houses>=4){ rent=Math.round(rent*1.15); notes.push('Tycoon +15%'); }
+  if(p.job==='barrister'){ rent=Math.round(rent*0.88); notes.push('Barrister −12%'); }
   if(p.insurance>0){ rent=Math.round(rent*0.5); p.insurance--; notes.push('Insurance halves it'); }
-  if(p.job==='diplomat'&&rent>250){ rent=250; notes.push('Diplomat caps it at $250'); }
+  if(p.job==='diplomat'&&rent>350){ rent=350; notes.push('Diplomat caps it at $350'); }
   const allied=areAllies(p,owner);
   if(allied){ rent=Math.round(rent*0.5); notes.push('Alliance — half rent'); }
   await showModal({title:'Rent Due',dismiss:false,build(host,fin){
@@ -1819,7 +1874,7 @@ async function landDeed(p,i,roll){
   }});
   await payOut(p,rent,owner,'rent on '+s.n);
   p.stats.paid+=rent; owner.stats.got+=rent;
-  if(p.job==='philanthropist'&&!p.bankrupt) give(p,Math.round(rent*0.25),'Philanthropist rebate');
+  if(p.job==='philanthropist'&&!p.bankrupt) give(p,Math.round(rent*0.15),'Philanthropist rebate');
   // the owner's ally takes a tithe of rent collected from an outsider
   if(!allied){
     const friend=allyOf(owner);
@@ -1829,7 +1884,7 @@ async function landDeed(p,i,roll){
 
 async function offerPurchase(p,i){
   const s=BOARD[i];
-  const price=p.job==='surveyor'?Math.round(s.p*0.9):s.p;
+  const price=p.job==='surveyor'?Math.round(s.p*0.93):s.p;
   const want=await showModal({title:'Unclaimed Deed',dismiss:false,build(host,fin){
     host.innerHTML=deedCardHtml(i)+`<div class="hr"></div>
       <div class="row"><span style="flex:1" class="muted tiny">You hold ${money(p.cash)}${price!==s.p?' · Surveyor −10%':''}</span><b class="num">${money(price)}</b></div>`;
@@ -1842,7 +1897,7 @@ async function offerPurchase(p,i){
     p.cash-=price;
     G.own[i]={owner:p.id,houses:0,mortgaged:false};
     log(`<b>${esc(p.name)}</b> buys <b>${esc(s.n)}</b> for <span class="num">${money(price)}</span>.`,'deed');
-    for(const q of alive()) if(q.id!==p.id&&q.job==='broker') give(q,60,'Broker commission');
+    for(const q of alive()) if(q.id!==p.id&&q.job==='broker') give(q,30,'Broker commission');
   }
 }
 
@@ -1863,12 +1918,12 @@ function build(p,i){
   p.cash-=c; G.own[i].houses++;
   const lvl=G.own[i].houses;
   log(`<b>${esc(p.name)}</b> builds ${lvl===5?'a hotel':lvl===6?'a skyscraper':'a house'} on <b>${esc(BOARD[i].n)}</b> for <span class="num">${money(c)}</span>.`,'deed');
-  for(const q of alive()) if(q.id!==p.id&&q.job==='unionboss') give(q,25,'Union Boss levy');
+  for(const q of alive()) if(q.id!==p.id&&q.job==='unionboss') give(q,15,'Union Boss levy');
   save();
 }
 function sellHouse(p,i,quiet){
   const o=G.own[i]; if(!o||o.owner!==p.id||o.houses<=0) return;
-  const back=p.job==='foreman'?buildCost(p,i):Math.floor(buildCost(p,i)/2);
+  const back=Math.floor(buildCost(p,i)*(p.job==='foreman'?0.75:0.5));
   o.houses--; p.cash+=back;
   log(`<b>${esc(p.name)}</b> sells a building on <b>${esc(BOARD[i].n)}</b> for <span class="num">${money(back)}</span>.`,'deed');
   save();
@@ -1877,13 +1932,13 @@ function mortgage(p,i,quiet){
   const o=G.own[i]; if(!o||o.owner!==p.id||o.mortgaged) return;
   if(BOARD[i].t==='prop'&&o.houses>0){ if(!quiet)toast('Sell the buildings first.'); return; }
   o.mortgaged=true;
-  const amt=Math.floor(BOARD[i].p*(p.job==='notary'?0.6:0.5)); p.cash+=amt;
+  const amt=Math.floor(BOARD[i].p*(p.job==='notary'?0.55:0.5)); p.cash+=amt;
   log(`<b>${esc(p.name)}</b> mortgages <b>${esc(BOARD[i].n)}</b> for <span class="num">${money(amt)}</span>.`,'deed');
   save();
 }
 function unmortgage(p,i){
   const o=G.own[i]; if(!o||o.owner!==p.id||!o.mortgaged) return;
-  const cost=Math.ceil(BOARD[i].p/2*(p.job==='notary'?1:1.1));
+  const cost=Math.ceil(BOARD[i].p/2*(p.job==='notary'?1.05:1.1));
   if(p.cash<cost){toast(`Costs ${money(cost)} to lift.`);return;}
   p.cash-=cost; o.mortgaged=false;
   log(`<b>${esc(p.name)}</b> lifts the mortgage on <b>${esc(BOARD[i].n)}</b> for <span class="num">${money(cost)}</span>.`,'deed');
@@ -2012,7 +2067,7 @@ function endTurn(){
    the previous player's final push. */
 function beginTurn(p){
   log(`<b>${esc(p.name)}</b> is up${p.jail?' — still in jail':''}.`,'system');
-  if(p.job==='nightwatch'&&!p.bankrupt) give(p,25,'Nightwatchman shift');
+  if(p.job==='nightwatch'&&!p.bankrupt) give(p,15,'Nightwatchman shift');
   $$('#boardHost,#sideBoardHost').forEach(h=>{ delete h.dataset.sig; h.__lastPos=null; });
   if(Net.online) setTimeout(()=>Net.pull(),120);
 }
@@ -2043,9 +2098,9 @@ function tickEconomy(){
   log(`Market ${delta>=0?'rises':'falls'} ${Math.abs(delta)} to <b>${G.economy}</b> — rents ×${econMult().toFixed(2)}${shock?' <b>(shock)</b>':''}.`);
   for(const q of alive()){
     if(q.job!=='speculator') continue;
-    if(delta>=0) give(q,delta*10,'Speculator — market up');
+    if(delta>=0) give(q,delta*6,'Speculator — market up');
     else{
-      const hit=Math.min(q.cash,Math.abs(delta)*5);
+      const hit=Math.min(q.cash,Math.abs(delta)*4);
       q.cash-=hit; fx.money(q,-hit);
       log(`<b>${esc(q.name)}</b> loses <span class="neg num">${money(hit)}</span> · Speculator — market down`,'money-out');
     }
@@ -2075,7 +2130,7 @@ async function repayLoan(p){
   if(amt>0){ p.cash-=amt; p.loan-=amt; log(`<b>${esc(p.name)}</b> repays <span class="num">${money(amt)}</span> of the loan.`); save(); render(); }
 }
 function buyInsurance(p){
-  const cost=p.job==='insurer'?60:120;
+  const cost=p.job==='insurer'?80:120;
   if(p.cash<cost){toast('Insurance costs '+money(cost)+'.');return;}
   p.cash-=cost; p.insurance++;
   log(`<b>${esc(p.name)}</b> buys rent insurance — next rent halved.`);
@@ -2142,7 +2197,7 @@ async function openTrade(a){
   o.props.forEach(i=>G.own[i].owner=other.id);
   w.props.forEach(i=>G.own[i].owner=a.id);
   log(`<b>${esc(a.name)}</b> ⇄ <b>${esc(other.name)}</b>: ${money(o.cash)}+${o.props.size} deed(s) for ${money(w.cash)}+${w.props.size} deed(s).`,'deed');
-  [a,other].forEach(q=>{ if(q.job==='realtor') give(q,100,'Realtor commission'); });
+  [a,other].forEach(q=>{ if(q.job==='realtor') give(q,50,'Realtor commission'); });
   save(); render();
 }
 
@@ -2236,13 +2291,132 @@ function syncPawns(host){
 }
 function mountBoard(host){
   if(!host) return;
-  const sig=boardSig();
+  const iso=!!UI.iso;
+  const sig=boardSig()+'|'+(iso?'iso':'flat');
   if(host.dataset.sig!==sig){
-    host.innerHTML=`<div class="boardstage">${boardSvg()}<div class="pawns3d"></div></div>`;
+    host.innerHTML=iso
+      ? '<div class="isowrap">'+boardIsoSvg()+'</div>'
+      : '<div class="boardstage">'+boardSvg()+'<div class="pawns3d"></div></div>';
     host.dataset.sig=sig;
     host.__lastPos=null;
   }
-  syncPawns(host);
+  if(!iso) syncPawns(host);
+}
+
+/* ---- isometric projection ---- */
+const ISO = {w:0.86, h:0.5, lift:26};   // x squash, y squash, board thickness
+function isoPt(x,y,z){
+  const cx=(x-BOARD_SIZE/2), cy=(y-BOARD_SIZE/2);
+  return [ (cx-cy)*ISO.w, (cx+cy)*ISO.h - (z||0) ];
+}
+function isoQuad(x,y,w,h,z){
+  const a=isoPt(x,y,z), b=isoPt(x+w,y,z), c=isoPt(x+w,y+h,z), d=isoPt(x,y+h,z);
+  return a+' '+b+' '+c+' '+d;
+}
+function shade(col,amount){
+  // darken a hex colour for the extruded faces
+  const m=/^#([0-9a-f]{6})$/i.exec(col||'');
+  if(!m) return col;
+  const n=parseInt(m[1],16);
+  const f=v=>Math.max(0,Math.min(255,Math.round(v*amount)));
+  return 'rgb('+f((n>>16)&255)+','+f((n>>8)&255)+','+f(n&255)+')';
+}
+
+function boardIsoSvg(){
+  const S=BOARD_SIZE, BAND=15, L=ISO.lift;
+  const cells=[];
+  // paint far cells first so nearer ones overlap correctly
+  const order=BOARD.map((_,i)=>i).sort((a,b)=>{
+    const A=cellRect(a), B=cellRect(b);
+    return (A.y+A.h/2 + A.x+A.w/2) - (B.y+B.h/2 + B.x+B.w/2);
+  });
+  for(const i of order){
+    const r=cellRect(i), o=G.own[i], owner=o?byId(o.owner):null;
+    const {x,y,w,h,side}=r;
+    const col=BOARD[i].g?GROUPS[BOARD[i].g].c:null;
+    const face=owner?shade(owner.color,0.55):'var(--panel)';
+    // side walls, drawn from the outer rim of the ring
+    const outer=[];
+    if(side==='bottom'||side==='corner') outer.push([x,y+h,w,0,'h']);
+    if(side==='top'||side==='corner') outer.push([x,y,w,0,'h']);
+    if(side==='left'||side==='corner') outer.push([x,y,0,h,'v']);
+    if(side==='right'||side==='corner') outer.push([x+w,y,0,h,'v']);
+    let walls='';
+    const rim=(px,py,qx,qy,dark)=>{
+      const t1=isoPt(px,py,L), t2=isoPt(qx,qy,L), b2=isoPt(qx,qy,0), b1=isoPt(px,py,0);
+      return '<polygon points="'+[t1,t2,b2,b1].join(' ')+'" fill="'+dark+'"/>';
+    };
+    if(side==='bottom') walls+=rim(x,y+h,x+w,y+h,'var(--line2)');
+    if(side==='right') walls+=rim(x+w,y,x+w,y+h,'var(--line)');
+    if(side==='corner'){
+      if(y>0) walls+=rim(x+w,y,x+w,y+h,'var(--line)');
+      if(y+h>=S) walls+=rim(x,y+h,x+w,y+h,'var(--line2)');
+      if(x+w>=S) walls+=rim(x+w,y,x+w,y+h,'var(--line)');
+    }
+    let band='';
+    if(side!=='corner'&&col){
+      if(side==='bottom') band='<polygon points="'+isoQuad(x,y,w,BAND,L)+'" fill="'+col+'"/>';
+      else if(side==='top') band='<polygon points="'+isoQuad(x,y+h-BAND,w,BAND,L)+'" fill="'+col+'"/>';
+      else if(side==='left') band='<polygon points="'+isoQuad(x+w-BAND,y,BAND,h,L)+'" fill="'+col+'"/>';
+      else band='<polygon points="'+isoQuad(x,y,BAND,h,L)+'" fill="'+col+'"/>';
+    }
+    // buildings stand up off the band
+    let blocks='';
+    if(o&&BOARD[i].t==='prop'&&o.houses){
+      const hotel=o.houses>=5, count=hotel?1:o.houses;
+      const bw=hotel?13:7, bh=hotel?13:7, tall=hotel?20:13;
+      const horiz=(side==='bottom'||side==='top');
+      const mx=x+w/2, my=y+h/2, total=count*bw+(count-1)*2;
+      for(let k=0;k<count;k++){
+        const off=-total/2+k*(bw+2);
+        const bx=horiz?mx+off:(side==='left'?x+w-BAND+1:x+2);
+        const by=horiz?(side==='bottom'?y+2:y+h-BAND+1):my+off;
+        const top=isoQuad(bx,by,bw,bh,L+tall);
+        const f1=[isoPt(bx,by+bh,L+tall),isoPt(bx+bw,by+bh,L+tall),isoPt(bx+bw,by+bh,L),isoPt(bx,by+bh,L)].join(' ');
+        const f2=[isoPt(bx+bw,by,L+tall),isoPt(bx+bw,by+bh,L+tall),isoPt(bx+bw,by+bh,L),isoPt(bx+bw,by,L)].join(' ');
+        blocks+='<polygon points="'+f1+'" fill="'+shade('#2E9E63',0.55)+'"/>'+
+                '<polygon points="'+f2+'" fill="'+shade('#2E9E63',0.75)+'"/>'+
+                '<polygon points="'+top+'" fill="#2E9E63"/>';
+      }
+    }
+    cells.push('<g data-a="space" data-v="'+i+'" style="cursor:pointer">'+
+      '<title>'+esc(BOARD[i].n)+(owner?' \u2014 '+esc(owner.name):'')+'</title>'+
+      walls+
+      '<polygon points="'+isoQuad(x,y,w,h,L)+'" fill="'+face+'" stroke="var(--line)" stroke-width="0.8"/>'+
+      band+blocks+
+      (o&&o.mortgaged?'<polygon points="'+isoQuad(x,y,w,h,L)+'" fill="url(#mtg)"/>':'')+
+      '</g>');
+  }
+  // centre panel sits on the same plane
+  const inset=CORNER, size=S-CORNER*2;
+  const p=cur();
+  const mid=isoPt(S/2,S/2,L);
+  const pawns=G.players.filter(q=>!q.bankrupt).map(q=>{
+    const c=cellRect(q.pos);
+    const px=c.x+c.w/2, py=c.y+c.h/2;
+    const base=isoPt(px,py,L), top=isoPt(px,py,L+30);
+    return {q,base,top,depth:px+py};
+  }).sort((a,b)=>a.depth-b.depth);
+  return '<svg viewBox="-560 -330 1120 700" role="img" aria-label="Board, isometric view">'+
+    '<defs><pattern id="mtg" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">'+
+      '<rect width="7" height="7" fill="var(--bad)" opacity=".08"/>'+
+      '<line x1="0" y1="0" x2="0" y2="7" stroke="var(--bad)" stroke-width="2" opacity=".4"/></pattern>'+
+      '<linearGradient id="felt2" x1="0" y1="0" x2="0.3" y2="1">'+
+      '<stop offset="0%" stop-color="var(--panel2)"/><stop offset="100%" stop-color="var(--sink)"/></linearGradient></defs>'+
+    '<polygon points="'+isoQuad(inset,inset,size,size,L)+'" fill="url(#felt2)" stroke="var(--line)"/>'+
+    cells.join('')+
+    '<g text-anchor="middle" transform="translate('+mid[0]+','+mid[1]+')">'+
+      '<text y="-6" font-size="30" font-family="Bahnschrift,\'DIN Alternate\',sans-serif" fill="var(--accent)" letter-spacing="6">MONOPOLINE</text>'+
+      '<text y="20" font-size="13" fill="var(--dim)" font-family="ui-monospace,monospace">ROUND '+G.round+
+        (G.cfg.economy?'   MARKET '+G.economy:'')+'</text>'+
+      (p?'<text y="42" font-size="13" fill="var(--faint)" font-family="ui-monospace,monospace">'+esc(p.name.toUpperCase())+' TO PLAY</text>':'')+
+    '</g>'+
+    pawns.map(({q,base,top})=>
+      '<g><line x1="'+base[0]+'" y1="'+base[1]+'" x2="'+top[0]+'" y2="'+top[1]+'" stroke="'+shade(q.color,0.6)+'" stroke-width="7" stroke-linecap="round"/>'+
+      '<ellipse cx="'+base[0]+'" cy="'+base[1]+'" rx="9" ry="5" fill="rgba(0,0,0,.35)"/>'+
+      '<circle cx="'+top[0]+'" cy="'+top[1]+'" r="11" fill="var(--sink)" stroke="'+q.color+'" stroke-width="2.5"/>'+
+      '<g transform="translate('+(top[0]-7)+','+(top[1]-7)+') scale(0.6)"><path d="'+(SVG.tokens[q.token]||SVG.tokens.spire)+'" fill="'+q.color+'"/></g></g>').join('')+
+  '</svg>';
 }
 
 function boardSvg(){
@@ -2420,6 +2594,7 @@ function render(){
   }
   renderActionBar();
   renderSide();
+  renderChat();
   // count the cash readout rather than snapping it
   const vEl=$('#readout .v');
   if(vEl){
@@ -2550,17 +2725,7 @@ function renderTurn(){
           :'<div class="tiny muted">Roll to get things moving.</div>'}
       </div></div>
 
-    <div class="card"><div class="hd"><h3>Table Talk</h3><div class="sp"></div>
-      ${Net.online?'<span class="livedot" title="Updating live"></span>':''}</div><div class="bd">
-      ${Net.online?`<div class="chatfeed" id="feed">
-        ${Net.chat.length?Net.chat.map(c=>`<div class="chatmsg"><b>${esc(c.name)}</b> ${esc(c.text)}</div>`).join('')
-          :'<div class="tiny muted">Say something to the table.</div>'}
-      </div>`:'<div class="tiny muted">Notes you type here go into the log for the table to read back.</div>'}
-      <div class="row" style="margin-top:9px">
-        <input type="text" id="chatIn" placeholder="${Net.online?'Message the table':'Leave a note'}" maxlength="140">
-        <button class="btn" data-a="say">Send</button>
-      </div>
-    </div></div>
+
 
     <div class="card"><div class="hd"><h3>The Table</h3></div><div class="bd" style="padding:0 12px 12px">
       ${G.players.map(q=>`
@@ -2597,8 +2762,14 @@ function renderBoard(){
   // The board host must outlive re-renders or the pawns lose their identity
   // (and with it, the ability to glide from space to space).
   if(!v.querySelector('#boardHost')){
-    v.innerHTML=`<div class="boardwrap"><div id="boardHost"></div></div><div id="boardRest"></div>`;
+    v.innerHTML=`<div class="boardwrap">
+      <div class="viewtoggle">
+        <button data-a="iso" data-v="0" aria-pressed="${!UI.iso}">Flat</button>
+        <button data-a="iso" data-v="1" aria-pressed="${!!UI.iso}">3D</button>
+      </div>
+      <div id="boardHost"></div></div><div id="boardRest"></div>`;
   }
+  $$('#view .viewtoggle button').forEach(b=>b.setAttribute('aria-pressed',String(!!UI.iso===(b.dataset.v==='1'))));
   mountBoard(v.querySelector('#boardHost'));
   v.querySelector('#boardRest').innerHTML=`
     ${G.cfg.economy?`<div class="card" style="margin-top:11px"><div class="bd row">
@@ -2740,7 +2911,7 @@ function renderBank(){
       <div class="grid g2">
         ${G.cfg.loans?`<button class="btn" data-a="loan" ${mine?'':'disabled'}>${SVG.icon('coin',17)} Borrow</button>
         <button class="btn" data-a="repay" ${mine&&p.loan>0?'':'disabled'}>${SVG.icon('coin',17)} Repay ${p.loan?money(p.loan):''}</button>`:''}
-        <button class="btn" data-a="insure" ${mine?'':'disabled'}>${SVG.icon('shield',17)} Insurance · ${money(p.job==='insurer'?60:120)}</button>
+        <button class="btn" data-a="insure" ${mine?'':'disabled'}>${SVG.icon('shield',17)} Insurance · ${money(p.job==='insurer'?80:120)}</button>
       </div>
       ${!mine?'<div class="tiny muted center" style="margin-top:9px">Bank services open on your turn.</div>':''}
       ${p.loan?`<div class="bank-note" style="margin-top:10px">Outstanding loan <b class="num">${money(p.loan)}</b> — grows 10% each lap.</div>`:''}
@@ -2779,7 +2950,11 @@ function renderLog(){
 function renderOver(){
   const v=$('#view');
   $('#readout').hidden=true; $('#tabs').hidden=true; $('#hdrRound').textContent='Game over';
-  if(!UI.celebrated){ UI.celebrated=true; confetti(); buzz([30,60,30,60,90]); }
+  if(!UI.celebrated){
+    UI.celebrated=true; confetti(); buzz([30,60,30,60,90]);
+    const winners=(G.winners&&G.winners.length?G.winners:[G.winner]).filter(id=>id!=null);
+    Account.recordResult(Net.online?winners.includes(Net.pid):false);
+  }
   const rank=[...G.players].sort((a,b)=>netWorth(b)-netWorth(a));
   v.innerHTML=`<div class="card"><div class="bd center" style="padding:20px 14px">
       <div class="lbl">${(G.winners&&G.winners.length>1)?'Allied to the end':'The last one standing'}</div>
@@ -2804,7 +2979,7 @@ const ACT={
   home(){ UI.screen='home'; render(); },
   modeLocal(){ Net.leave(); setupDraft={names:['',''],cfg:defaultCfg()}; UI.screen='setup'; render(); },
   async modeOnline(){
-    const name=await promptModal('Play Online','Your name','',14);
+    const name=await promptModal('Play Online','Your name',Account.signedIn?Account.user.name:'',14);
     if(name===undefined) return;
     const choice=await showModal({title:'Play Online',build(host,fin){
       host.innerHTML=`<div class="grid" style="gap:9px">
@@ -2860,7 +3035,7 @@ const ACT={
     const chosen=await choosePiece(
       others.map(p=>p.piece).filter(Boolean), mine.piece||PTOKENS[Net.pid],
       others.map(p=>p.color).filter(Boolean), mine.color||PCOLORS[Net.pid]);
-    if(chosen) Net.piece(chosen.piece,chosen.color);
+    if(chosen){ Net.piece(chosen.piece,chosen.color); Account.savePrefs({piece:chosen.piece,color:chosen.color}); }
   },
   start(){ startLocalGame(); },
   startOnline(){ startOnlineGame(); },
@@ -2944,7 +3119,7 @@ const ACT={
       await moveTo(p,to,true);
       save(); render();
     }else if(p.job==='trainop'){
-      const fare=75;
+      const fare=90;
       if(p.cash<fare){ toast('The fare is '+money(fare)+'.'); return; }
       const stations=groupIdx('transit');
       const to=await showModal({title:'Ride the Rails',build(host,fin){
@@ -2979,8 +3154,8 @@ const ACT={
       const step=await showModal({title:'Nudge',build(host,fin){
         host.innerHTML=`<p class="tiny muted" style="margin-top:0">Drift up to three spaces either way, then resolve where you land.</p>
           <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:6px">
-            ${[-3,-2,-1].map(n=>`<button class="btn" data-n="${n}">${n}</button>`).join('')}
-            ${[1,2,3].map(n=>`<button class="btn" data-n="${n}">+${n}</button>`).join('')}</div>`;
+            ${[-2,-1].map(n=>`<button class="btn" data-n="${n}">${n}</button>`).join('')}
+            ${[1,2].map(n=>`<button class="btn" data-n="${n}">+${n}</button>`).join('')}</div>`;
         $$('[data-n]',host).forEach(b=>b.onclick=()=>fin(+b.dataset.n));
         return{footer:[{label:'Cancel',fn:()=>fin(0)}]};
       }});
@@ -3014,8 +3189,10 @@ const ACT={
   rules(){ showRules(); },
   jobsInfo(){ showJobs(); },
   bug(){ reportBug(); },
+  account(){ openAccount(); },
   skins(){ chooseSkin(); },
   tutorial(){ startTutorial(); },
+  iso(v){ UI.iso=v==='1'; store.set('monopoline.iso',UI.iso?'1':'0'); render(); },
   morelog(){ UI.logShown=(UI.logShown||60)+120; render(); }
 };
 
@@ -3288,6 +3465,257 @@ function openConsole(){
   }});
 }
 
+/* ── accounts ────────────────────────────────────────────────
+   Optional. Signing in remembers your name, piece and colour, and
+   keeps a lifetime record. Play works exactly the same signed out. */
+const Account={
+  token:store.get('monopoline.authToken')||null, user:null,
+  get signedIn(){ return !!(this.token&&this.user); },
+  async call(path,body,method){
+    const res=await fetch('/api/auth/'+path,{
+      method:method||'POST',headers:{'Content-Type':'application/json'},
+      body:body?JSON.stringify(body):undefined});
+    let d={}; try{ d=await res.json(); }catch(e){}
+    if(!res.ok) throw new Error(d.error||'Request failed');
+    return d;
+  },
+  async restore(){
+    if(!this.token) return;
+    try{
+      const d=await fetch('/api/auth/me?token='+encodeURIComponent(this.token)).then(r=>r.json());
+      if(d.user){ this.user=d.user; this.applyPrefs(); }
+      else this.forget();
+    }catch(e){ /* offline or no server: stay signed out, play as normal */ }
+    render();
+  },
+  applyPrefs(){
+    const pr=(this.user&&this.user.prefs)||{};
+    if(pr.skin&&SKINS[pr.skin]) applySkin(pr.skin);
+  },
+  remember(d){
+    this.token=d.token||this.token; this.user=d.user;
+    store.set('monopoline.authToken',this.token);
+    this.applyPrefs();
+  },
+  forget(){ this.token=null; this.user=null; store.del('monopoline.authToken'); },
+  async savePrefs(patch){
+    if(!this.signedIn) return;
+    try{ const d=await this.call('prefs',Object.assign({token:this.token},patch)); this.user=d.user; }
+    catch(e){}
+  },
+  async recordResult(won){
+    if(!this.signedIn) return;
+    try{ const d=await this.call('result',{token:this.token,won:!!won}); this.user=d.user; }
+    catch(e){}
+  }
+};
+
+async function openAccount(){
+  await showModal({title:Account.signedIn?'Your account':'Sign in',build(host,fin,redraw){
+    const st=host._st||(host._st={mode:'in',err:'',busy:false});
+    if(Account.signedIn){
+      const u=Account.user, st2=u.stats||{games:0,wins:0};
+      host.innerHTML=`<div class="pad center">
+          <div class="lbl">Signed in as</div>
+          <div class="disp" style="font-size:24px;margin:4px 0">${esc(u.name)}</div>
+          <div class="row" style="justify-content:center;gap:8px;margin-top:8px">
+            <span class="badge">${st2.games} games</span>
+            <span class="badge acc">${st2.wins} wins</span>
+          </div>
+        </div>
+        <div class="bank-note">Your name, piece, colour and palette follow you to any device you sign in on.</div>`;
+      return{footer:[
+        {label:'Sign out',cls:'dang',fn:async()=>{
+          try{ await Account.call('logout',{token:Account.token}); }catch(e){}
+          Account.forget(); fin(); render();
+        }},
+        {label:'Done',cls:'pri',fn:fin}
+      ]};
+    }
+    host.innerHTML=`
+      <div class="seg" style="margin-bottom:11px">
+        <button data-m="in" aria-pressed="${st.mode==='in'}">Sign in</button>
+        <button data-m="up" aria-pressed="${st.mode==='up'}">Create account</button>
+      </div>
+      <div class="lbl">Name</div>
+      <input type="text" id="acName" maxlength="14" autocomplete="username" placeholder="3–14 characters">
+      <div class="lbl" style="margin-top:9px">Password</div>
+      <input type="password" id="acPass" maxlength="64" autocomplete="${st.mode==='up'?'new-password':'current-password'}" placeholder="at least 4 characters">
+      ${st.err?`<div class="bank-note" style="border-color:var(--bad);color:var(--bad);margin-top:9px">${esc(st.err)}</div>`:''}
+      <p class="tiny muted" style="margin-top:10px">Optional — the game plays the same without one. An account just
+      remembers your name, piece and colour, and keeps a running tally of games and wins.</p>`;
+    $$('[data-m]',host).forEach(b=>b.onclick=()=>{ st.mode=b.dataset.m; st.err=''; redraw(); });
+    return{footer:[
+      {label:'Not now',fn:fin},
+      {label:st.busy?'Working…':(st.mode==='up'?'Create':'Sign in'),cls:'pri',disabled:st.busy,fn:async()=>{
+        const name=($('#acName',host).value||'').trim(), pass=$('#acPass',host).value||'';
+        st.busy=true; st.err=''; redraw();
+        try{
+          const d=await Account.call(st.mode==='up'?'register':'login',{name,pass});
+          Account.remember(d);
+          toast('Signed in as '+d.user.name);
+          fin(); render();
+        }catch(e){
+          st.err=/fetch|network|failed/i.test(e.message)?'No account server reachable from here.':e.message;
+          st.busy=false; redraw();
+        }
+      }}
+    ]};
+  }});
+}
+
+/* ── voice ───────────────────────────────────────────────────
+   A small mesh: every player in the call holds one peer connection to
+   each other. The server only relays offers, answers and candidates. */
+const Voice={
+  on:false, stream:null, muted:false, peers:new Map(), inCall:[],
+  ICE:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}],
+  async join(){
+    if(!Net.online){ toast('Voice is for online tables.'); return; }
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      toast('This browser has no microphone access.'); return;
+    }
+    try{
+      this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
+    }catch(e){
+      toast(e&&e.name==='NotAllowedError'?'Microphone permission denied.':'No microphone available.');
+      return;
+    }
+    this.on=true; this.muted=false;
+    await Net.voice(true);
+    // dial everyone already in the call; lower pid always makes the offer
+    for(const pid of this.inCall){ if(pid!==Net.pid&&pid>Net.pid) this.dial(pid); }
+    renderChat();
+  },
+  async leave(){
+    this.on=false;
+    for(const [pid,pc] of this.peers){ try{ pc.close(); }catch(e){} this.dropAudio(pid); }
+    this.peers.clear();
+    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+    if(Net.online) await Net.voice(false);
+    renderChat();
+  },
+  toggleMute(){
+    this.muted=!this.muted;
+    if(this.stream) this.stream.getAudioTracks().forEach(t=>t.enabled=!this.muted);
+    renderChat();
+  },
+  peer(pid){
+    if(this.peers.has(pid)) return this.peers.get(pid);
+    const pc=new RTCPeerConnection({iceServers:this.ICE});
+    if(this.stream) this.stream.getTracks().forEach(t=>pc.addTrack(t,this.stream));
+    pc.onicecandidate=e=>{ if(e.candidate) Net.signal(pid,'ice',e.candidate); };
+    pc.ontrack=e=>this.attachAudio(pid,e.streams[0]);
+    pc.onconnectionstatechange=()=>{
+      if(['failed','closed','disconnected'].includes(pc.connectionState)){ this.dropAudio(pid); }
+      renderChat();
+    };
+    this.peers.set(pid,pc);
+    return pc;
+  },
+  async dial(pid){
+    const pc=this.peer(pid);
+    const offer=await pc.createOffer({offerToReceiveAudio:true});
+    await pc.setLocalDescription(offer);
+    Net.signal(pid,'offer',offer);
+  },
+  async onSignal(msg){
+    if(!this.on) return;
+    const from=msg.from;
+    try{
+      if(msg.kind==='offer'){
+        const pc=this.peer(from);
+        await pc.setRemoteDescription(msg.data);
+        const ans=await pc.createAnswer();
+        await pc.setLocalDescription(ans);
+        Net.signal(from,'answer',ans);
+      }else if(msg.kind==='answer'){
+        const pc=this.peers.get(from); if(pc) await pc.setRemoteDescription(msg.data);
+      }else if(msg.kind==='ice'){
+        const pc=this.peers.get(from); if(pc) await pc.addIceCandidate(msg.data).catch(()=>{});
+      }
+    }catch(e){ /* a stale offer from a peer who left; ignore */ }
+  },
+  attachAudio(pid,stream){
+    let el=$('#va'+pid);
+    if(!el){
+      el=document.createElement('audio');
+      el.id='va'+pid; el.autoplay=true; el.playsInline=true;
+      $('#voiceAudio').appendChild(el);
+    }
+    el.srcObject=stream;
+    el.play&&el.play().catch(()=>{});
+  },
+  dropAudio(pid){ const el=$('#va'+pid); if(el) el.remove(); },
+  /* the call roster changed: dial newcomers, drop leavers */
+  sync(list){
+    this.inCall=list||[];
+    if(!this.on) { renderChat(); return; }
+    for(const pid of this.inCall){
+      if(pid===Net.pid) continue;
+      if(!this.peers.has(pid)&&pid>Net.pid) this.dial(pid);
+    }
+    for(const [pid,pc] of this.peers){
+      if(!this.inCall.includes(pid)){ try{ pc.close(); }catch(e){} this.peers.delete(pid); this.dropAudio(pid); }
+    }
+    renderChat();
+  }
+};
+
+/* ── chat popup ─────────────────────────────────────────────── */
+function chatOpen(){ return !!UI.chatOpen; }
+function toggleChat(){
+  UI.chatOpen=!UI.chatOpen;
+  if(UI.chatOpen) UI.chatUnread=0;
+  renderChat();
+  if(UI.chatOpen) setTimeout(()=>{const el=$('#chatIn'); if(el) el.focus();},60);
+}
+function renderChat(){
+  const fab=$('#chatFab'), pop=$('#chatPop');
+  if(!fab||!pop) return;
+  const live=!!G&&!G.over&&UI.screen==='game';
+  fab.hidden=!live;
+  if(!live){ pop.hidden=true; return; }
+  fab.innerHTML=SVG.icon('chat',22)+(UI.chatUnread?`<span class="badge-n">${UI.chatUnread>9?'9+':UI.chatUnread}</span>`:'');
+  fab.onclick=toggleChat;
+  pop.hidden=!UI.chatOpen;
+  if(!UI.chatOpen) return;
+  const inCall=Voice.inCall||[];
+  pop.innerHTML=`
+    <div class="hd">${SVG.icon('chat',16)}<h3>Table Talk</h3><div class="sp"></div>
+      <button class="iconbtn" data-c="close" aria-label="Close">✕</button></div>
+    ${Net.online?`<div class="voicebar">
+      <button class="btn sm ${Voice.on?'dang':'pri'}" data-c="voice">${Voice.on?'Leave voice':'Join voice'}</button>
+      ${Voice.on?`<button class="btn sm" data-c="mute">${Voice.muted?'Unmute':'Mute'}</button>`:''}
+      <div class="sp"></div>
+      ${inCall.length?inCall.map(pid=>{
+        const q=G.players[pid];
+        const connected=pid===Net.pid||((Voice.peers.get(pid)||{}).connectionState==='connected');
+        return `<span class="voicepip ${connected?'on':''}"><span class="lvl"></span>${esc(q?q.name:'#'+pid)}</span>`;
+      }).join(''):'<span class="tiny muted">Nobody on the call</span>'}
+    </div>`:''}
+    <div class="body" id="chatBody">
+      ${Net.online
+        ?(Net.chat.length?Net.chat.map(c=>`<div class="chatmsg"><b>${esc(c.name)}</b> ${esc(c.text)}</div>`).join('')
+          :'<div class="tiny muted">Say something to the table.</div>')
+        :'<div class="tiny muted">Notes you type here go into the game log.</div>'}
+    </div>
+    <div class="foot">
+      <input type="text" id="chatIn" placeholder="${Net.online?'Message the table':'Leave a note'}" maxlength="140">
+      <button class="btn sm pri" data-c="send">Send</button>
+    </div>`;
+  const body=$('#chatBody',pop); if(body) body.scrollTop=body.scrollHeight;
+  $$('[data-c]',pop).forEach(b=>b.onclick=()=>{
+    const a=b.dataset.c;
+    if(a==='close') toggleChat();
+    if(a==='send') ACT.say();
+    if(a==='voice') Voice.on?Voice.leave():Voice.join();
+    if(a==='mute') Voice.toggleMute();
+  });
+  const inp=$('#chatIn',pop);
+  if(inp) inp.onkeydown=e=>{ if(e.key==='Enter') ACT.say(); };
+}
+
 /* ── theming ─────────────────────────────────────────────────── */
 async function chooseSkin(){
   await showModal({title:'Theme',build(host,fin,redraw){
@@ -3314,7 +3742,7 @@ async function chooseSkin(){
       applySkin(currentSkin); redraw(); render();
     });
     $$('[data-skin]',host).forEach(b=>b.onclick=()=>{
-      applySkin(b.dataset.skin); redraw(); render();
+      applySkin(b.dataset.skin); Account.savePrefs({skin:b.dataset.skin}); redraw(); render();
     });
     return{footer:[{label:'Done',cls:'pri',fn:fin}]};
   }});
@@ -3644,6 +4072,7 @@ function load(){
       }catch(e){ await alertModal('Could not join',`<p>${esc(e.message)}</p>`); }
     })();
   }
+  Account.restore();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
