@@ -76,7 +76,7 @@ Chance at 7/22/36 and Community Chest at 2/17/33 — with the usual prices and r
 agrees space for space with a physical board sitting next to it.
 
 Everything a property game normally needs — deeds, colour sets, houses and hotels, mortgages at 10% to
-lift, trades with a confirmation step, jail, bankruptcy with forced liquidation, and a live transaction log — plus:
+lift, trades that both players must agree to, jail, bankruptcy with forced liquidation, and a live transaction log — plus:
 
 - **Jobs.** Everyone picks from **five offers** out of a deck of **twenty-nine**, all rebalanced to sit
   in a $20–45 payday band with gentler effects (Architect builds 15% cheaper, Barrister pays 12% less rent,
@@ -89,7 +89,7 @@ lift, trades with a confirmation step, jail, bankruptcy with forced liquidation,
 - **A guided tour.** Twenty-two coach marks over the live interface covering the rules as well as the
   screen — payday, promotion, skyscrapers, mortgages, the market, alliances — offered on the first game and available
   any time from the menu.
-- **Twelve palettes**, each with light and dark variants, plus **24 playing pieces** and a bench of
+- **Twelve palettes**, each with light and dark variants, plus **25 playing pieces** and a bench of
   20 colours — every player picks their own shape and colour, so no two tables look alike.
 - **A living economy.** A market index drifts each round and scales all rent between ×0.70 and ×1.35.
 - **Skyscrapers**, one tier above hotels, paying 1.6× hotel rent.
@@ -110,6 +110,7 @@ public/index.html         the entire game — self-contained, also runs from fil
 public/sw.js              service worker (offline shell)
 public/manifest.webmanifest
 public/icon.svg
+public/baghali.png        an image-backed playing piece
 ```
 
 ### API
@@ -125,10 +126,10 @@ public/icon.svg
 | `POST` | `/api/rooms/:code/piece` | claim a playing piece and colour |
 | `POST` | `/api/rooms/:code/title` | host renames the table |
 | `POST` | `/api/rooms/:code/pact` | accept or decline an alliance offer |
+| `POST` | `/api/rooms/:code/trade` | accept or decline a trade offer |
 | `POST` | `/api/rooms/:code/say` | table chat |
 | `POST` | `/api/rooms/:code/signal` | relay one WebRTC message to one peer |
 | `POST` | `/api/rooms/:code/voice` | join or leave the voice call |
-| `POST` | `/api/auth/register` | `login` | `me` | `prefs` | `result` | accounts |
 | `POST` | `/api/admin/announce` | `blackout` | moderator broadcasts (needs `ADMIN_KEY` if set) |
 | `POST` | `/api/report` | file a bug report |
 | `GET` | `/api/reports?key=…` | read reports back (needs `ADMIN_KEY`) |
@@ -164,18 +165,6 @@ Every change is written to the table log as a `Console` entry, so nothing happen
 itself is never broadcast or logged. In an online game changes can only be applied on your turn, since
 the table rejects writes from anyone else.
 
-## Accounts
-
-Optional. Sign in and your name, piece, colour and palette follow you between devices, and a
-lifetime tally of games and wins is kept.
-
-Passwords are hashed with **scrypt** and a per-user salt; the plain password is never stored.
-Login returns the same message whether the name exists or not, so accounts cannot be enumerated.
-
-Accounts live in `DATA_DIR/users.json` (`DATA_DIR` defaults to `./data`). **On Render's free tier the
-filesystem is ephemeral, so accounts reset on every deploy** — attach a Render disk and point
-`DATA_DIR` at it to keep them.
-
 ## Voice chat
 
 Online tables can open a voice call from the chat popup. It is a WebRTC mesh: every player in the call
@@ -190,7 +179,6 @@ Under the **Setup** tab:
 - **Easy words** — rewrites the interface into plain language, so deeds become property cards and
   mortgages become borrowing.
 - **Lightweight** — no animations, flat board, no voice. Everything battery-hungry is switched off.
-- **Developer** — unlocks the console. With it off, `/consolejeff` does nothing.
 
 ## Moderator powers
 

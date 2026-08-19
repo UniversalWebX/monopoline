@@ -23,40 +23,6 @@ const rooms = new Map();
     what survives on a host with an ephemeral disk. */
 const reports = [];
 
-/* ── accounts ──────────────────────────────────────────────────
-   Small on-disk store. DATA_DIR should point at a mounted disk in
-   production; on an ephemeral filesystem accounts reset on redeploy. */
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-let users = Object.create(null);
-try {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (fs.existsSync(USERS_FILE)) {
-    // Object.create(null): a plain {} would report "constructor", "toString"
-    // and friends as existing accounts.
-    users = Object.assign(Object.create(null), JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')));
-  }
-} catch (e) { console.log('[accounts] could not read store:', e.message); }
-let saveTimer = null;
-function saveUsers() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try { fs.writeFileSync(USERS_FILE, JSON.stringify(users)); }
-    catch (e) { console.log('[accounts] could not write store:', e.message); }
-  }, 250);
-}
-const hashPass = (pass, salt) => crypto.scryptSync(String(pass), salt, 64).toString('hex');
-const userKey = name => String(name || '').trim().toLowerCase();
-const validName = n => /^[a-zA-Z0-9 _-]{3,14}$/.test(String(n || '').trim());
-function publicUser(u) {
-  return { name: u.name, prefs: u.prefs || {}, stats: u.stats || { games: 0, wins: 0 }, since: u.created };
-}
-function userByToken(token) {
-  if (!token) return null;
-  for (const k of Object.keys(users)) if (users[k].token === token) return users[k];
-  return null;
-}
-
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
 function newCode() {
   let c;
@@ -176,97 +142,6 @@ async function api(req, res, url) {
     // Render surfaces stdout in the dashboard, so this is where reports land.
     console.log(`[bug] ${entry.at} | ${entry.from}${entry.code ? ' @' + entry.code : ''} | ${entry.text.replace(/\s+/g, ' ').slice(0, 400)}`);
     return send(res, 200, { ok: true, filed: reports.length });
-  }
-
-  // ── accounts ───────────────────────────────────────────────
-  if (seg[1] === 'auth') {
-    const what = seg[2];
-
-    if (what === 'register' && method === 'POST') {
-      const body = await readJson(req, 4096);
-      const name = String(body.name || '').trim();
-      const pass = String(body.pass || '');
-      if (!validName(name)) return send(res, 400, { error: 'Names are 3–14 characters: letters, numbers, spaces, - and _.' });
-      if (pass.length < 4) return send(res, 400, { error: 'Use at least 4 characters for the password.' });
-      if (Object.keys(users).length >= 5000) return send(res, 503, { error: 'The account list is full.' });
-      const key = userKey(name);
-      const existing = users[key];
-      if (existing) {
-        // same person submitting twice (slow cold start, double tap, proxy retry)
-        const attempt = hashPass(pass, existing.salt);
-        const same = attempt.length === existing.hash.length &&
-          crypto.timingSafeEqual(Buffer.from(attempt, 'hex'), Buffer.from(existing.hash, 'hex'));
-        if (same) {
-          existing.token = newToken();
-          saveUsers();
-          console.log('[accounts] repeat register for ' + existing.name + ' -> signed in');
-          return send(res, 200, { token: existing.token, user: publicUser(existing), existing: true });
-        }
-        return send(res, 409, { error: 'That name is taken. If it is yours, use Sign in.' });
-      }
-      const salt = crypto.randomBytes(16).toString('hex');
-      users[key] = {
-        name, salt, hash: hashPass(pass, salt), token: newToken(),
-        created: new Date().toISOString(), stats: { games: 0, wins: 0 }, prefs: {}
-      };
-      saveUsers();
-      console.log('[accounts] created ' + name + ' (' + Object.keys(users).length + ' total)');
-      return send(res, 200, { token: users[key].token, user: publicUser(users[key]) });
-    }
-
-    if (what === 'login' && method === 'POST') {
-      const body = await readJson(req, 4096);
-      const u = users[userKey(body.name)];
-      const pass = String(body.pass || '');
-      // compare in constant time, and do the work even when the user is unknown
-      const salt = u ? u.salt : 'x'.repeat(32);
-      const attempt = hashPass(pass, salt);
-      const expect = u ? u.hash : attempt.replace(/./g, '0');
-      const ok = u && attempt.length === expect.length &&
-        crypto.timingSafeEqual(Buffer.from(attempt, 'hex'), Buffer.from(expect, 'hex'));
-      if (!ok) return send(res, 401, { error: 'Wrong name or password.' });
-      u.token = newToken();
-      saveUsers();
-      return send(res, 200, { token: u.token, user: publicUser(u) });
-    }
-
-    if (what === 'me' && method === 'GET') {
-      const u = userByToken(url.searchParams.get('token'));
-      if (!u) return send(res, 401, { error: 'Signed out.' });
-      return send(res, 200, { user: publicUser(u) });
-    }
-
-    if (what === 'prefs' && method === 'POST') {
-      const body = await readJson(req, 4096);
-      const u = userByToken(body.token);
-      if (!u) return send(res, 401, { error: 'Signed out.' });
-      u.prefs = u.prefs || {};
-      if (typeof body.piece === 'string') u.prefs.piece = clean(body.piece, 16);
-      if (/^#[0-9a-fA-F]{6}$/.test(String(body.color || ''))) u.prefs.color = body.color;
-      if (typeof body.skin === 'string') u.prefs.skin = clean(body.skin, 16);
-      saveUsers();
-      return send(res, 200, { user: publicUser(u) });
-    }
-
-    if (what === 'result' && method === 'POST') {
-      const body = await readJson(req, 4096);
-      const u = userByToken(body.token);
-      if (!u) return send(res, 401, { error: 'Signed out.' });
-      u.stats = u.stats || { games: 0, wins: 0 };
-      u.stats.games++;
-      if (body.won) u.stats.wins++;
-      saveUsers();
-      return send(res, 200, { user: publicUser(u) });
-    }
-
-    if (what === 'logout' && method === 'POST') {
-      const body = await readJson(req, 4096);
-      const u = userByToken(body.token);
-      if (u) { u.token = null; saveUsers(); }
-      return send(res, 200, { ok: true });
-    }
-
-    return send(res, 404, { error: 'Unknown account endpoint.' });
   }
 
   // ── moderator broadcasts ───────────────────────────────────
@@ -455,6 +330,60 @@ async function api(req, res, url) {
     touch(room);
     broadcast(room, 'voice', { voice: room.voice });
     return send(res, 200, { voice: room.voice });
+  }
+
+  // POST /api/rooms/:code/trade -> the other player answers a trade offer.
+  // Applied here rather than pushed, because the responder is usually not the
+  // player whose turn it is and so holds no write authority.
+  if (action === 'trade' && method === 'POST') {
+    const body = await readJson(req, 4096);
+    const seat = room.players.find(p => p.token === body.token);
+    if (!seat) return send(res, 403, { error: 'Not a member of this table.' });
+    const st = room.state;
+    if (!st || !st.trade) return send(res, 409, { error: 'There is no offer on the table.', v: room.v, state: st });
+    if (st.trade.to !== seat.pid) return send(res, 409, { error: 'That offer is not yours to answer.', v: room.v, state: st });
+
+    const deal = st.trade;
+    const from = st.players[deal.from], to = st.players[deal.to];
+    st.trade = null;
+
+    const say = (h, k) => st.log.unshift({ r: st.round, k: k || 'system', h });
+
+    if (body.kind !== 'accept') {
+      say(`<b>${clean(to.name)}</b> turns down the trade with <b>${clean(from.name)}</b>.`);
+    } else {
+      // re-check the terms: the board may have moved since the offer was made
+      const holds = (who, bag) => {
+        if (who.cash < bag.cash) return `${clean(who.name)} no longer has the cash.`;
+        if ((who.cards || 0) < bag.cards) return `${clean(who.name)} no longer holds those cards.`;
+        for (const i of bag.props) {
+          const o = st.own[i];
+          if (!o || o.owner !== who.id) return 'A deed in the offer has changed hands.';
+          if (o.houses > 0) return 'A property in the offer has buildings on it.';
+        }
+        return null;
+      };
+      const why = (!from || !to || from.bankrupt || to.bankrupt)
+        ? 'A player in the trade has left the game.'
+        : (holds(from, deal.give) || holds(to, deal.want));
+      if (why) {
+        say(`The trade between <b>${clean(from.name)}</b> and <b>${clean(to.name)}</b> fell through — ${why}`);
+      } else {
+        from.cash -= deal.give.cash; to.cash += deal.give.cash;
+        to.cash -= deal.want.cash; from.cash += deal.want.cash;
+        from.cards = (from.cards || 0) - deal.give.cards; to.cards = (to.cards || 0) + deal.give.cards;
+        to.cards = (to.cards || 0) - deal.want.cards; from.cards = (from.cards || 0) + deal.want.cards;
+        deal.give.props.forEach(i => { if (st.own[i]) st.own[i].owner = to.id; });
+        deal.want.props.forEach(i => { if (st.own[i]) st.own[i].owner = from.id; });
+        [from, to].forEach(q => { if (q.job === 'realtor') q.cash += 50; });
+        say(`<b>${clean(from.name)}</b> and <b>${clean(to.name)}</b> shake on a trade.`, 'deed');
+      }
+    }
+
+    room.v++;
+    touch(room);
+    broadcast(room, 'state', { v: room.v, state: st, by: seat.pid });
+    return send(res, 200, { v: room.v, state: st });
   }
 
   // POST /api/rooms/:code/pact -> answer an alliance offer.

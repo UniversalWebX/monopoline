@@ -655,8 +655,25 @@ const SVG={
     fish:'M2.6 12c4.2-5.4 10.6-6.6 15-3.4l4.4-3-1.6 6.4 1.6 6.4-4.4-3c-4.4 3.2-10.8 2-15-3.4Zm6.4-1.4a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z'
   },
   token(shape,color,size){
+    const px=size||18;
+    if(PIECE_IMAGES[shape]){
+      return `<img src="${PIECE_IMAGES[shape]}" width="${px}" height="${px}" alt="" aria-hidden="true"
+        style="width:${px}px;height:${px}px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;
+        box-shadow:0 0 0 1.5px ${color||'currentColor'}">`;
+    }
     const d=SVG.tokens[shape]||SVG.tokens.spire;
-    return `<svg viewBox="0 0 24 24" width="${size||18}" height="${size||18}" aria-hidden="true"><path d="${d}" fill="${color||'currentColor'}"/></svg>`;
+    return `<svg viewBox="0 0 24 24" width="${px}" height="${px}" aria-hidden="true"><path d="${d}" fill="${color||'currentColor'}"/></svg>`;
+  },
+  /* the same piece drawn inside an SVG document */
+  tokenSvg(shape,color,size,x,y){
+    const px=size||24;
+    if(PIECE_IMAGES[shape]){
+      return `<image href="${PIECE_IMAGES[shape]}" x="${x||0}" y="${y||0}" width="${px}" height="${px}"
+        preserveAspectRatio="xMidYMid slice" clip-path="circle(50%)"/>`;
+    }
+    const d=SVG.tokens[shape]||SVG.tokens.spire;
+    const k=px/24;
+    return `<g transform="translate(${x||0},${y||0}) scale(${k})"><path d="${d}" fill="${color||'currentColor'}"/></g>`;
   },
   icons:{
     turn:'M12 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7Zm0 3 5 3-5 3Z',
@@ -837,12 +854,13 @@ const PALETTE=['#D9483C','#3F8FE0','#2E9E63','#F2A007','#B76FE0','#33A79E','#D95
   '#E5322D','#4FA8FF','#3FD9A8','#E0B92E'];
 const PTOKENS=['spire','anchor','key','lantern','gear','bolt','crown','wave',
   'tophat','boot','ship','car','cat','dog','rocket','diamond',
-  'flame','leaf','moon','star','bell','trophy','umbrella','fish'];
+  'flame','leaf','moon','star','bell','trophy','umbrella','fish','baghali'];
+/* pieces that are pictures rather than drawn shapes */
+const PIECE_IMAGES={baghali:'./baghali.png'};
 const UI={screen:'home',tab:'turn',pendingState:null,modalDepth:0,
   iso:store.get('monopoline.iso')==='1',chatOpen:false,chatUnread:0,
   easy:store.get('monopoline.easy')==='1',
-  lite:store.get('monopoline.lite')==='1',
-  dev:store.get('monopoline.dev')==='1'};
+  lite:store.get('monopoline.lite')==='1'};
 
 function defaultCfg(){return{
   start:1500, salary:200, freeParking:true, skyscrapers:true,
@@ -912,6 +930,9 @@ const Net={
   /* Adopt a state pushed by another device. Never yank the table out from under
      an open modal — hold it until the local interaction finishes. */
   adopt(state,v){
+    // never travel backwards: a late or duplicated delivery must not replace
+    // a newer state we already hold
+    if(typeof v==='number'&&v<this.v) return;
     this.v=v;
     if(UI.modalDepth>0){ UI.pendingState=state; return; }
     G=state;
@@ -940,7 +961,7 @@ const Net={
     if(!force&&!this.mayWrite()) return;
     this.dirty=true;
     clearTimeout(this.pushT);
-    this.pushT=setTimeout(()=>this.flush(),140);
+    this.pushT=setTimeout(()=>{ this.pushT=null; this.flush(); },140);
   },
   async piece(piece,color){
     try{
@@ -983,9 +1004,12 @@ const Net={
      board everyone sees is refreshed as the turn begins, not as it ends. */
   async pull(){
     if(!this.online) return;
+    // A write of ours is queued or in flight: the server is behind us, and
+    // adopting it here would undo the very move we just made.
+    if(this.dirty||this.pushing||this.pushT) return;
     try{
       const r=await this.api('rooms/'+this.code);
-      if(r&&r.state&&typeof r.v==='number'&&r.v>=this.v) this.adopt(r.state,r.v);
+      if(r&&r.state&&typeof r.v==='number'&&r.v>this.v) this.adopt(r.state,r.v);
       if(r&&r.roster){ this.roster=r.roster; if(r.roster.title!=null) this.title=r.roster.title; }
     }catch(e){ /* the SSE stream will catch us up */ }
   },
@@ -999,6 +1023,15 @@ const Net={
     try{ const r=await this.api('rooms/'+this.code+'/voice',{method:'POST',body:{token:this.token,on}});
       Voice.sync(r.voice||[]); }
     catch(e){ toast('Could not reach the table.'); }
+  },
+  async trade(kind){
+    try{
+      const r=await this.api('rooms/'+this.code+'/trade',{method:'POST',body:{token:this.token,kind}});
+      if(r.state) this.adopt(r.state,r.v);
+    }catch(err){
+      if(err.data&&err.data.state) this.adopt(err.data.state,err.data.v);
+      toast(err.message||'Could not answer that.');
+    }
   },
   async pact(kind){
     try{
@@ -1120,6 +1153,7 @@ async function raiseFunds(p,need,to,why){
 async function bankrupt(p,to){
   p.bankrupt=true;
   dissolve(p,'bankruptcy');
+  if(G.trade&&(G.trade.from===p.id||G.trade.to===p.id)) G.trade=null;
   const props=deedsOf(p);
   if(to){
     to.cash+=Math.max(0,p.cash);
@@ -1372,7 +1406,7 @@ function pieceFor(i){
 const PIECE_NAMES={spire:'Spire',anchor:'Anchor',key:'Key',lantern:'Lantern',gear:'Gear',bolt:'Bolt',
   crown:'Crown',wave:'Wave',tophat:'Top Hat',boot:'Boot',ship:'Ship',car:'Car',cat:'Cat',dog:'Dog',
   rocket:'Rocket',diamond:'Diamond',flame:'Flame',leaf:'Leaf',moon:'Moon',star:'Star',bell:'Bell',
-  trophy:'Trophy',umbrella:'Umbrella',fish:'Fish'};
+  trophy:'Trophy',umbrella:'Umbrella',fish:'Fish',baghali:'Baghali'};
 
 function colorFor(i){
   const chosen=setupDraft&&setupDraft.colors&&setupDraft.colors[i];
@@ -1429,8 +1463,7 @@ function renderHome(){
     <div class="grid g2">
       <button class="btn" data-a="rules">${SVG.icon('help',17)} How it works</button>
       <button class="btn" data-a="jobsInfo">${SVG.icon('people',17)} The jobs</button>
-      <button class="btn" data-a="account">${SVG.icon('people',17)} ${Account.signedIn?esc(Account.user.name):'Sign in'}</button>
-      <button class="btn" data-a="skins">${SVG.icon('palette',17)} ${esc((SKINS[currentSkin]||SKINS.ink).name)}</button>
+      <button class="btn wide" data-a="skins">${SVG.icon('palette',17)} ${esc((SKINS[currentSkin]||SKINS.ink).name)}</button>
       <button class="btn" data-a="bug">${SVG.icon('bug',17)} Report a bug</button>
     </div>
     ${saved||room?`<button class="btn dang wide" data-a="reset">Reset everything</button>`:''}
@@ -1560,7 +1593,7 @@ function buildGame(names,cfg,pieces,colors){
   return {
     v:2, cfg:{...cfg}, round:1, turnIdx:0, doubles:0, rolled:false, lastRoll:[1,1],
     economy:100, econHist:[100], pot:0, log:[], own:{}, over:false, winner:null, winners:[],
-    alliances:[], pact:null,
+    alliances:[], pact:null, trade:null,
     phase:cfg.jobMode==='off'?'play':'draft',
     draft:{offers:{},picked:{}},
     players:names.map((n,i)=>({
@@ -1731,6 +1764,10 @@ async function doRoll(a,b){
   }
   G.rolled=true;
   await moveBy(p,sum);
+  if(G.doubles>0&&!p.jail&&!p.bankrupt&&!G.over){
+    G.rolled=false;                       // the dice come straight back
+    log(`<b>${esc(p.name)}</b> rolled doubles — go again.`);
+  }
   save(); render();
 }
 function sendToJail(p){
@@ -2071,7 +2108,7 @@ async function drawCard(deck,p){
 function endTurn(){
   if(G.over) return;
   const p=cur();
-  if(G.doubles>0&&!p.jail&&!p.bankrupt){ G.rolled=false; log(`<b>${esc(p.name)}</b> rolled doubles — go again.`); save({force:true}); render(); return; }
+  if(G.doubles>0&&!p.jail&&!p.bankrupt){ G.rolled=false; save({force:true}); render(); return; }
   G.doubles=0;
   const startIdx=G.turnIdx;
   let n=G.turnIdx, wrapped=false;
@@ -2201,32 +2238,96 @@ async function openTrade(a){
   }});
   if(!res) return;
   const {offer:o,want:w}=res, other=res.b;
-  // both sides get a plain-language summary before anything moves
+  const nothing=!o.cash&&!w.cash&&!o.props.size&&!w.props.size&&!o.cards&&!w.cards;
+  if(nothing){ toast('That trade is empty.'); return; }
+  const deal={
+    from:a.id, to:other.id, round:G.round,
+    give:{cash:o.cash,props:[...o.props],cards:o.cards},
+    want:{cash:w.cash,props:[...w.props],cards:w.cards}
+  };
+  // check it over before sending, so nobody is asked to judge an impossible deal
+  const why=tradeProblem(deal);
+  if(why){ toast(why); return; }
+  const sure=await confirmModal('Send this offer?',
+    tradeSummary(deal)+'<div class="hr"></div>'+
+    `<p class="tiny muted">Nothing moves until <b>${esc(other.name)}</b> accepts.</p>`,
+    'Send it');
+  if(!sure) return;
+  G.trade=deal;
+  log(`<b>${esc(a.name)}</b> offers a trade to <b>${esc(other.name)}</b>.`,'system');
+  save(); render();
+  if(!Net.online) await askTrade();   // one device: hand it over now
+}
+
+/* ── a trade needs both signatures ─────────────────────────────
+   The proposer builds it, the other player accepts or declines, and
+   only then does anything move. */
+function tradeBag(deal,which){ return which==='give'?deal.give:deal.want; }
+function tradeProblem(deal){
+  const from=byId(deal.from), to=byId(deal.to);
+  if(!from||!to||from.bankrupt||to.bankrupt) return 'That player is no longer in the game.';
+  const check=(who,bag,label)=>{
+    if(who.cash<bag.cash) return `${label} no longer has ${money(bag.cash)}.`;
+    if((who.cards||0)<bag.cards) return `${label} no longer holds that many jail cards.`;
+    for(const i of bag.props){
+      const o=G.own[i];
+      if(!o||o.owner!==who.id) return `${esc(BOARD[i].n)} is no longer ${label}'s.`;
+      if(BOARD[i].t==='prop'&&o.houses>0) return `${esc(BOARD[i].n)} has buildings on it — sell them first.`;
+    }
+    return null;
+  };
+  return check(from,deal.give,from.name)||check(to,deal.want,to.name);
+}
+function tradeSummary(deal){
+  const from=byId(deal.from), to=byId(deal.to);
   const side=(who,bag)=>{
     const bits=[];
     if(bag.cash) bits.push(`<b class="num">${money(bag.cash)}</b>`);
-    bag.props.forEach(i=>bits.push(esc(BOARD[i].n)+(G.own[i].mortgaged?' <span class="pill">mortgaged</span>':'')));
+    bag.props.forEach(i=>bits.push(esc(BOARD[i].n)+(G.own[i]&&G.own[i].mortgaged?' <span class="pill">mortgaged</span>':'')));
     if(bag.cards) bits.push(`${bag.cards} jail card${bag.cards>1?'s':''}`);
     return `<div class="lbl" style="margin-top:8px">${esc(who.name)} gives</div>
       <div class="tiny">${bits.length?bits.join('<br>'):'<span class="muted">nothing</span>'}</div>`;
   };
-  const nothing=!o.cash&&!w.cash&&!o.props.size&&!w.props.size&&!o.cards&&!w.cards;
-  if(nothing){ toast('That trade is empty.'); return; }
-  const ok=await confirmModal('Confirm the trade',
-    `${side(a,o)}${side(other,w)}
-     <div class="hr"></div>
-     <p class="tiny muted">Deeds change hands immediately. Buildings must be sold before a street can be traded.</p>`,
-    'Shake on it');
-  if(!ok) return;
-  a.cash-=o.cash; other.cash+=o.cash;
-  other.cash-=w.cash; a.cash+=w.cash;
-  a.cards-=o.cards; other.cards+=o.cards;
-  other.cards-=w.cards; a.cards+=w.cards;
-  o.props.forEach(i=>G.own[i].owner=other.id);
-  w.props.forEach(i=>G.own[i].owner=a.id);
-  log(`<b>${esc(a.name)}</b> ⇄ <b>${esc(other.name)}</b>: ${money(o.cash)}+${o.props.size} deed(s) for ${money(w.cash)}+${w.props.size} deed(s).`,'deed');
-  [a,other].forEach(q=>{ if(q.job==='realtor') give(q,50,'Realtor commission'); });
+  return side(from,deal.give)+side(to,deal.want);
+}
+/* shown to the receiving player on this device */
+async function askTrade(){
+  const deal=G.trade; if(!deal) return;
+  const from=byId(deal.from), to=byId(deal.to);
+  const yes=await confirmModal(`${to.name} — an offer`,
+    `<div class="center" style="color:${from.color};margin-bottom:4px">${SVG.token(from.token,from.color,40)}</div>
+     <p class="tiny muted center" style="margin-top:0"><b>${esc(from.name)}</b> proposes a trade.</p>`+
+    tradeSummary(deal),'Accept');
+  await settleTrade(yes);
+}
+function applyTrade(deal){
+  const from=byId(deal.from), to=byId(deal.to);
+  from.cash-=deal.give.cash; to.cash+=deal.give.cash;
+  to.cash-=deal.want.cash; from.cash+=deal.want.cash;
+  from.cards=(from.cards||0)-deal.give.cards; to.cards=(to.cards||0)+deal.give.cards;
+  to.cards=(to.cards||0)-deal.want.cards; from.cards=(from.cards||0)+deal.want.cards;
+  deal.give.props.forEach(i=>{ if(G.own[i]) G.own[i].owner=to.id; });
+  deal.want.props.forEach(i=>{ if(G.own[i]) G.own[i].owner=from.id; });
+  log(`<b>${esc(from.name)}</b> ⇄ <b>${esc(to.name)}</b>: ${money(deal.give.cash)}+${deal.give.props.length} deed(s) for ${money(deal.want.cash)}+${deal.want.props.length} deed(s).`,'deed');
+  [from,to].forEach(q=>{ if(q.job==='realtor') give(q,50,'Realtor commission'); });
+}
+async function settleTrade(accepted){
+  const deal=G.trade; if(!deal) return;
+  const from=byId(deal.from), to=byId(deal.to);
+  G.trade=null;
+  if(!accepted){
+    log(`<b>${esc(to.name)}</b> turns down the trade with <b>${esc(from.name)}</b>.`,'system');
+    save(); render(); return;
+  }
+  const why=tradeProblem(deal);
+  if(why){ toast(why); log(`The trade between <b>${esc(from.name)}</b> and <b>${esc(to.name)}</b> fell through — ${why}`,'system'); }
+  else applyTrade(deal);
   save(); render();
+}
+async function answerTrade(accepted){
+  if(!G.trade||G.trade.to!==meId()) return;
+  if(Net.online){ await Net.trade(accepted?'accept':'decline'); return; }
+  await settleTrade(accepted);
 }
 
 
@@ -2443,7 +2544,7 @@ function boardIsoSvg(){
       '<g><line x1="'+base[0]+'" y1="'+base[1]+'" x2="'+top[0]+'" y2="'+top[1]+'" stroke="'+shade(q.color,0.6)+'" stroke-width="7" stroke-linecap="round"/>'+
       '<ellipse cx="'+base[0]+'" cy="'+base[1]+'" rx="9" ry="5" fill="rgba(0,0,0,.35)"/>'+
       '<circle cx="'+top[0]+'" cy="'+top[1]+'" r="11" fill="var(--sink)" stroke="'+q.color+'" stroke-width="2.5"/>'+
-      '<g transform="translate('+(top[0]-7)+','+(top[1]-7)+') scale(0.6)"><path d="'+(SVG.tokens[q.token]||SVG.tokens.spire)+'" fill="'+q.color+'"/></g></g>').join('')+
+      SVG.tokenSvg(q.token,q.color,14,top[0]-7,top[1]-7)+'</g>').join('')+
   '</svg>';
 }
 
@@ -2562,7 +2663,7 @@ function boardSvg(){
       ${G.cfg.freeParking?`<text y="18" font-size="13" fill="var(--dim)" font-family="${MONO}">FREE PARKING ${money(G.pot)}</text>`:''}
       ${p?`<g transform="translate(0,50)">
         <text y="0" font-size="10" fill="var(--faint)" font-family="${MONO}" letter-spacing="2.5">NOW PLAYING</text>
-        <g class="tok-float" transform="translate(-14,12)"><path d="${SVG.tokens[p.token]||SVG.tokens.spire}" fill="${p.color}" transform="scale(1.2)"/></g>
+        <g class="tok-float">${SVG.tokenSvg(p.token,p.color,29,-14,12)}</g>
         <text y="60" font-size="16" fill="var(--text)" font-family="${DISP}" letter-spacing="1.5">${esc(p.name.toUpperCase())}</text>
       </g>`:''}
     </g>
@@ -2652,7 +2753,7 @@ function renderActionBar(){
   const rollLabel=p.jail?'Roll for doubles':'Roll the dice';
   bar.innerHTML=`
     ${!G.rolled?`<button class="btn pri" data-a="${G.cfg.dice==='manual'?'rollbar':'roll'}">${SVG.icon('turn',17)} ${rollLabel}</button>`
-      :`<button class="btn pri" data-a="end">${G.doubles>0&&!p.jail?'Roll again':'End turn'}</button>`}
+      :`<button class="btn pri" data-a="end">End turn</button>`}
     ${G.rolled?`<button class="btn" data-a="trade" style="flex:0 0 auto">Trade</button>`:''}`;
 }
 
@@ -2717,7 +2818,7 @@ function renderTurn(){
           <select id="md2" aria-label="Second die">${[1,2,3,4,5,6].map(n=>`<option ${n===G.lastRoll[1]?'selected':''}>${n}</option>`).join('')}</select>
           <button class="btn" data-a="rollmanual">Move</button>
         </div>`:''}
-      ${G.doubles>0&&!p.jail?`<div class="tiny center" style="margin-top:8px;color:var(--accent)">Doubles ${G.doubles} — you roll again after this turn.</div>`:''}
+      ${G.doubles>0&&!p.jail?`<div class="tiny center" style="margin-top:8px;color:var(--accent)">Doubles ${G.doubles} — roll again${G.doubles===2?', but a third sends you to jail':''}.</div>`:''}
     </div></div>
 
     ${p.jail&&mine?`<div class="grid g2">
@@ -2732,6 +2833,24 @@ function renderTurn(){
       ${p.job?`<button class="btn" data-a="jobact" ${jobActionReady(p)?'':'disabled'}>${jobActionLabel(p)}</button>`:''}
     </div></div>`:''}
 
+    ${(G.trade&&G.trade.to===meId())?`
+      <div class="card stripe" style="--c:${byId(G.trade.from).color}"><div class="bd">
+        <div class="lbl">Trade offered</div>
+        <div class="row" style="margin:6px 0 4px">
+          <span style="color:${byId(G.trade.from).color}">${SVG.token(byId(G.trade.from).token,byId(G.trade.from).color,28)}</span>
+          <span style="flex:1"><b>${esc(byId(G.trade.from).name)}</b> wants to trade with you.</span>
+        </div>
+        ${tradeSummary(G.trade)}
+        <div class="grid g2" style="margin-top:10px">
+          <button class="btn" data-a="tradeNo">Decline</button>
+          <button class="btn pri" data-a="tradeYes">Accept</button>
+        </div>
+      </div></div>`:''}
+    ${(G.trade&&G.trade.from===meId())?`
+      <div class="card"><div class="bd row">
+        <span class="spinner"></span>
+        <span class="tiny muted" style="flex:1">Waiting for <b>${esc(byId(G.trade.to).name)}</b> to answer your trade offer.</span>
+      </div></div>`:''}
     ${(G.cfg.alliances&&G.pact&&G.pact.to===meId())?`
       <div class="card stripe" style="--c:${byId(G.pact.from).color}"><div class="bd">
         <div class="lbl">Alliance offered</div>
@@ -2977,7 +3096,6 @@ function renderSettings(){
     <div class="card"><div class="hd">${SVG.icon('gear',16)}<h3>Modes</h3></div><div class="bd">
       ${mode('easy','Easy words','Swaps the game\u2019s jargon for plain language a five-year-old can follow — deeds become property cards, mortgages become borrowing.',UI.easy)}
       ${mode('lite','Lightweight','No animations, flat board, no voice chat. Everything that costs battery is switched off.',UI.lite)}
-      ${mode('dev','Developer','Unlocks the console. With this off, the console command does nothing.',UI.dev)}
     </div></div>
 
     <div class="card"><div class="hd">${SVG.icon('board',16)}<h3>Board</h3></div><div class="bd">
@@ -2988,9 +3106,8 @@ function renderSettings(){
       ${UI.lite?'<div class="tiny muted" style="margin-top:8px">Lightweight mode keeps the board flat.</div>':''}
     </div></div>
 
-    <div class="card"><div class="hd">${SVG.icon('palette',16)}<h3>Look</h3></div><div class="bd grid g2">
+    <div class="card"><div class="hd">${SVG.icon('palette',16)}<h3>Look</h3></div><div class="bd">
       <button class="btn" data-a="skins">${SVG.icon('palette',17)} ${esc((SKINS[currentSkin]||SKINS.ink).name)}</button>
-      <button class="btn" data-a="account">${SVG.icon('people',17)} ${Account.signedIn?esc(Account.user.name):'Sign in'}</button>
     </div></div>
 
     <div class="card"><div class="hd">${SVG.icon('help',16)}<h3>Help</h3></div><div class="bd grid g2">
@@ -3000,9 +3117,7 @@ function renderSettings(){
       <button class="btn" data-a="bug">${SVG.icon('bug',17)} Report a bug</button>
     </div></div>
 
-    ${UI.dev?`<div class="card stripe" style="--c:var(--bad)"><div class="hd">${SVG.icon('build',16)}<h3>Developer</h3></div>
-      <div class="bd"><p class="tiny muted" style="margin-top:0">Type <b class="mono">/consolejeff</b> into chat to open the console.</p>
-      <button class="btn wide" data-a="openconsole">Open the console</button></div></div>`:''}`;
+`;
   $$('[data-mode]',v).forEach(cb=>cb.onchange=()=>{
     const k=cb.dataset.mode, on=cb.checked;
     UI[k]=on; store.set('monopoline.'+k,on?'1':'0');
@@ -3034,8 +3149,6 @@ function renderOver(){
   $('#readout').hidden=true; $('#tabs').hidden=true; $('#hdrRound').textContent='Game over';
   if(!UI.celebrated){
     UI.celebrated=true; confetti(); buzz([30,60,30,60,90]);
-    const winners=(G.winners&&G.winners.length?G.winners:[G.winner]).filter(id=>id!=null);
-    Account.recordResult(Net.online?winners.includes(Net.pid):false);
   }
   const rank=[...G.players].sort((a,b)=>netWorth(b)-netWorth(a));
   v.innerHTML=`<div class="card"><div class="bd center" style="padding:20px 14px">
@@ -3061,7 +3174,7 @@ const ACT={
   home(){ UI.screen='home'; render(); },
   modeLocal(){ Net.leave(); setupDraft={names:['',''],cfg:defaultCfg()}; UI.screen='setup'; render(); },
   async modeOnline(){
-    const name=await promptModal('Play Online','Your name',Account.signedIn?Account.user.name:'',14);
+    const name=await promptModal('Play Online','Your name','',14);
     if(name===undefined) return;
     const choice=await showModal({title:'Play Online',build(host,fin){
       host.innerHTML=`<div class="grid" style="gap:9px">
@@ -3117,7 +3230,7 @@ const ACT={
     const chosen=await choosePiece(
       others.map(p=>p.piece).filter(Boolean), mine.piece||PTOKENS[Net.pid],
       others.map(p=>p.color).filter(Boolean), mine.color||PCOLORS[Net.pid]);
-    if(chosen){ Net.piece(chosen.piece,chosen.color); Account.savePrefs({piece:chosen.piece,color:chosen.color}); }
+    if(chosen) Net.piece(chosen.piece,chosen.color);
   },
   start(){ startLocalGame(); },
   startOnline(){ startOnlineGame(); },
@@ -3258,7 +3371,6 @@ const ACT={
     el.value=''; UI.chatDraft='';
     // secret handle — never broadcast, never logged
     if(/^\/consolejeff$/i.test(text)){
-      if(!UI.dev){ toast('Developer mode is off — turn it on in Setup.'); return; }
       openConsole(); return;
     }
     if(Net.online) Net.say(text);
@@ -3269,19 +3381,19 @@ const ACT={
     if(t!==undefined) Net.rename(t);
   },
   alliance(){ openAlliance(); },
+  async tradeYes(){ await answerTrade(true); },
+  async tradeNo(){ await answerTrade(false); },
   async pactYes(){ await answerPact(true); },
   async pactNo(){ await answerPact(false); },
   rules(){ showRules(); },
   jobsInfo(){ showJobs(); },
   bug(){ reportBug(); },
-  account(){ openAccount(); },
   skins(){ chooseSkin(); },
   tutorial(){ startTutorial(); },
   iso(v){
     if(v==='1'&&UI.lite){ toast('Lightweight mode keeps the board flat.'); return; }
     UI.iso=v==='1'; store.set('monopoline.iso',UI.iso?'1':'0'); render();
   },
-  openconsole(){ if(UI.dev) openConsole(); },
   morelog(){ UI.logShown=(UI.logShown||60)+120; render(); }
 };
 
@@ -3622,112 +3734,6 @@ function openConsole(){
   }});
 }
 
-/* ── accounts ────────────────────────────────────────────────
-   Optional. Signing in remembers your name, piece and colour, and
-   keeps a lifetime record. Play works exactly the same signed out. */
-const Account={
-  token:store.get('monopoline.authToken')||null, user:null,
-  get signedIn(){ return !!(this.token&&this.user); },
-  _busy:false,
-  async call(path,body,method){
-    // one auth request at a time: a second tap must never register twice
-    if(this._busy&&/register|login/.test(path)) throw new Error('Already working on that.');
-    if(/register|login/.test(path)) this._busy=true;
-    try{ return await this._call(path,body,method); } finally { this._busy=false; }
-  },
-  async _call(path,body,method){
-    const res=await fetch('/api/auth/'+path,{
-      method:method||'POST',headers:{'Content-Type':'application/json'},
-      body:body?JSON.stringify(body):undefined});
-    let d={}; try{ d=await res.json(); }catch(e){}
-    if(!res.ok) throw new Error(d.error||'Request failed');
-    return d;
-  },
-  async restore(){
-    if(!this.token) return;
-    try{
-      const d=await fetch('/api/auth/me?token='+encodeURIComponent(this.token)).then(r=>r.json());
-      if(d.user){ this.user=d.user; this.applyPrefs(); }
-      else this.forget();
-    }catch(e){ /* offline or no server: stay signed out, play as normal */ }
-    render();
-  },
-  applyPrefs(){
-    const pr=(this.user&&this.user.prefs)||{};
-    if(pr.skin&&SKINS[pr.skin]) applySkin(pr.skin);
-  },
-  remember(d){
-    this.token=d.token||this.token; this.user=d.user;
-    store.set('monopoline.authToken',this.token);
-    this.applyPrefs();
-  },
-  forget(){ this.token=null; this.user=null; store.del('monopoline.authToken'); },
-  async savePrefs(patch){
-    if(!this.signedIn) return;
-    try{ const d=await this.call('prefs',Object.assign({token:this.token},patch)); this.user=d.user; }
-    catch(e){}
-  },
-  async recordResult(won){
-    if(!this.signedIn) return;
-    try{ const d=await this.call('result',{token:this.token,won:!!won}); this.user=d.user; }
-    catch(e){}
-  }
-};
-
-async function openAccount(){
-  await showModal({title:Account.signedIn?'Your account':'Sign in',build(host,fin,redraw){
-    const st=host._st||(host._st={mode:'in',err:'',busy:false});
-    if(Account.signedIn){
-      const u=Account.user, st2=u.stats||{games:0,wins:0};
-      host.innerHTML=`<div class="pad center">
-          <div class="lbl">Signed in as</div>
-          <div class="disp" style="font-size:24px;margin:4px 0">${esc(u.name)}</div>
-          <div class="row" style="justify-content:center;gap:8px;margin-top:8px">
-            <span class="badge">${st2.games} games</span>
-            <span class="badge acc">${st2.wins} wins</span>
-          </div>
-        </div>
-        <div class="bank-note">Your name, piece, colour and palette follow you to any device you sign in on.</div>`;
-      return{footer:[
-        {label:'Sign out',cls:'dang',fn:async()=>{
-          try{ await Account.call('logout',{token:Account.token}); }catch(e){}
-          Account.forget(); fin(); render();
-        }},
-        {label:'Done',cls:'pri',fn:fin}
-      ]};
-    }
-    host.innerHTML=`
-      <div class="seg" style="margin-bottom:11px">
-        <button data-m="in" aria-pressed="${st.mode==='in'}">Sign in</button>
-        <button data-m="up" aria-pressed="${st.mode==='up'}">Create account</button>
-      </div>
-      <div class="lbl">Name</div>
-      <input type="text" id="acName" maxlength="14" autocomplete="username" placeholder="3–14 characters">
-      <div class="lbl" style="margin-top:9px">Password</div>
-      <input type="password" id="acPass" maxlength="64" autocomplete="${st.mode==='up'?'new-password':'current-password'}" placeholder="at least 4 characters">
-      ${st.err?`<div class="bank-note" style="border-color:var(--bad);color:var(--bad);margin-top:9px">${esc(st.err)}</div>`:''}
-      <p class="tiny muted" style="margin-top:10px">Optional — the game plays the same without one. An account just
-      remembers your name, piece and colour, and keeps a running tally of games and wins.</p>`;
-    $$('[data-m]',host).forEach(b=>b.onclick=()=>{ st.mode=b.dataset.m; st.err=''; redraw(); });
-    return{footer:[
-      {label:'Not now',fn:fin},
-      {label:st.busy?'Working…':(st.mode==='up'?'Create':'Sign in'),cls:'pri',disabled:st.busy,fn:async()=>{
-        const name=($('#acName',host).value||'').trim(), pass=$('#acPass',host).value||'';
-        st.busy=true; st.err=''; redraw();
-        try{
-          const d=await Account.call(st.mode==='up'?'register':'login',{name,pass});
-          Account.remember(d);
-          toast('Signed in as '+d.user.name);
-          fin(); render();
-        }catch(e){
-          st.err=/fetch|network|failed/i.test(e.message)?'No account server reachable from here.':e.message;
-          st.busy=false; redraw();
-        }
-      }}
-    ]};
-  }});
-}
-
 /* ── voice ───────────────────────────────────────────────────
    A small mesh: every player in the call holds one peer connection to
    each other. The server only relays offers, answers and candidates. */
@@ -3968,7 +3974,7 @@ async function chooseSkin(){
       applySkin(currentSkin); redraw(); render();
     });
     $$('[data-skin]',host).forEach(b=>b.onclick=()=>{
-      applySkin(b.dataset.skin); Account.savePrefs({skin:b.dataset.skin}); redraw(); render();
+      applySkin(b.dataset.skin); redraw(); render();
     });
     return{footer:[{label:'Done',cls:'pri',fn:fin}]};
   }});
@@ -4316,7 +4322,6 @@ function load(){
   }
   document.documentElement.classList.toggle('lite',!!UI.lite);
   if(UI.lite) UI.iso=false;
-  Account.restore();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
