@@ -2,8 +2,8 @@
    Network-first for the app shell so a deploy is picked up immediately;
    cache is the fallback when the table has no signal.
    Realtime endpoints are never cached. */
-const CACHE = 'monopoline-v19';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './baghali.png'];
+const CACHE = 'monopoline-v21';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './baghali.png', './showcase/index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -34,3 +34,6 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(request).then(hit => hit || caches.match('./index.html')))
   );
 });
+
+
+print("loaded");

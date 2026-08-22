@@ -1,0 +1,518 @@
+(n
+3D
+GO
+OK
+to
+and
+Buy
+for
+MTG
+out
+Pay
+Red
+you
+Back
+buys
+Deed
+Dice
+Done
+Flat
+Heir
+Help
+host
+jail
+Jail
+Jobs
+line
+Look
+Menu
+Move
+pays
+Pink
+Send
+Skip
+turn
+0&&to
+Apply
+Bank.
+Board
+Brown
+Close
+Green
+Jobs.
+loses
+Modes
+Mogul
+Nudge
+Repay
+Seats
+Setup
+Shape
+Theme
+Trade
+· cash
+Accept
+Arctic
+Borrow
+Broker
+Cancel
+Chance
+Colour
+Deeds.
+draws:
+Ledger
+Monopo
+Notary
+Orange
+Pay Up
+Payday
+Random
+Rejoin
+repays
+Resume
+Review
+Saved.
+Tycoon
+Yellow
+'+ (p?'
+'+j.n+'
+(shock)
+#0E2A2C
+#0F1E2E
+#101A22
+#12211A
+#1A0F2E
+#1A2418
+#1B2036
+#1B2430
+#2A2114
+#2C1626
+#DCEAF7
+#E6EFE7
+#E6F5F4
+#E7F1F7
+#E8F0E4
+#EDE6DA
+#EDE7FF
+#EDEDED
+#EFE3CB
+#F2E9DA
+#FBE9E4
+4× roll
+Actions
+Bailiff
+Balance
+borrows
+Caught.
+Close ✕
+Console
+Copied:
+Decline
+Drifter
+Foreman
+Gambler
+Held by
+In jail
+Insurer
+Keep it
+Next up
+No jobs
+nothing
+On hand
+Palette
+Realtor
+Sent to
+The log
+Utility
+You owe
+— bank —
+— none —
+0&&steps
+10× roll
+accepts.
+bankrupt
+Bankrupt
+Covered.
+Diplomat
+End turn
+Give Up?
+Landlord
+Mortgage
+New Game
+Owned by
+Pay Rent
+Railroad
+receives
+Rent Due
+Save now
+Surveyor
+The dice
+The Jobs
+The reel
+Use this
+Your job
+Alliances
+Architect
+Bank Loan
+Barrister
+Blueprint
+choosing…
+Conductor
+Copy code
+Copy link
+Dark Blue
+Financier
+GO salary
+half rent
+Job Draft
+Locksmith
+mortgaged
+Mortgaged
+mortgages
+Net worth
+Parchment
+Table Log
+The board
+The Table
+Unclaimed
+Your Roll
+Accountant
+Alliances.
+Applied to
+Cherry Ink
+Commission
+Coral Reef
+Go To Jail
+Grid Baron
+hurries to
+Income Tax
+Ink & Gold
+Light Blue
+List price
+Luxury Tax
+Monochrome
+Monopoline
+MONOPOLINE
+Mortgaging
+payable to
+Repay Loan
+Saved game
+Short Line
+Speculator
+Statistics
+Table Talk
+Thank you.
+Union Boss
+Your piece
+'+ walls+ '
+advances to
+Allied with
+backs up to
+Copy report
+First time?
+Full screen
+House Rules
+Leave table
+Neon Arcade
+NOW PLAYING
+One utility
+Play Online
+Raise Funds
+Roll in app
+Skyscrapers
+Swap Places
+Takes a cut
+The fare is
+These reach
+Toll Keeper
+Waiting for
+Water Works
++ Add player
+Announcement
+Born into it
+Builds cheap
+Cartographer
+Deed updated
+Draft 1 of 2
+Emerald Club
+Forest Floor
+Free Parking
+How It Works
+Keeps a copy
+Market index
+Presses luck
+Report a bug
+Skyscrapers.
+Sunset Strip
+The economy.
+Toggle theme
+Trading with
+You will pay
+').join('')+'
+'+esc(text)+'
+Atlantic Deco
+Borrows cheap
+Building cost
+Collects sets
+Just Happened
+Keep at least
+Lift mortgage
+Light or dark
+Moderator key
+Nightwatchman
+No deeds yet.
+Owns the gate
+Pay everyone…
+Replace state
+Reset sent to
+Ride the Line
+Runs the line
+Salvages well
+Sell building
+Skims the top
+Starting cash
+Takes a share
+Tax Collector
+Trade offered
+Turns the key
+Writes it off
+'; else band='
+').join('')+ '
+'+boardSvg()+'
+Both utilities
+Break the pact
+Builds empires
+Could not join
+Empty the jail
+Mortgage deeds
+Mortgage value
+node server.js
+Owns the wires
+Philanthropist
+Reads the code
+Ride the Rails
+Rides the line
+State replaced
+Table overview
+Takes the levy
+Three doubles.
+Train Operator
+Unclaimed Deed
+'+esc(q.name)+'
+'s loan accrues
+Buying property
+Clear all loans
+Community Chest
+Final Standings
+Force game over
+Insurance costs
+Leave the table
+Making it yours
+Negotiates hard
+Open table talk
+Pass the device
+Redraws the map
+Rides the index
+takes work as a
+'+esc(to.name)+'
+<b>Console</b> ·
+Alliance offered
+B. & O. Railroad
+Could not rejoin
+Deal Everyone In
+Electric Company
+Free Parking pot
+Getting promoted
+I roll real dice
+Join with a code
+Knows the ground
+Outstanding loan
+Reading Railroad
+Reset everything
+Reset the server
+Return all deeds
+Send this offer?
+Send to everyone
+Where you landed
+Whose turn it is
+'+boardIsoSvg()+'
+Could not connect
+Hedges everything
+Houses and hotels
+Never quite still
+offers a trade to
+Paid by the shift
+proposes a trade.
+Start a new table
+swaps places with
+Two ways to play.
+'+PIECE_NAMES[t]+'
+Declare Bankruptcy
+Game state applied
+Give every deed to
+No tradable deeds.
+Nobody on the call
+Nothing to repair.
+Return all to bank
+Set every balance…
+Show older entries
+You are maxed out.
+Clear all alliances
+Files the paperwork
+Give every deed to…
+Jail, and the cards
+Loans and insurance
+Nothing moves until
+sells a building on
+Swept off the floor
+Your one big button
+, not just this one.
+'+ cells.join('')+ '
+Jail / Just Visiting
+Nobody to swap with.
+Reads the fine print
+Rent and colour sets
+Talking to the table
+That trade is empty.
+The Line · 40 spaces
+Trades and alliances
+Waiting for players…
+Waiting for the host
+— grows 10% each lap.
+'+k+' · '+esc(sp.n)+'
+Attach the game state
+lifts the mortgage on
+Nothing on the books.
+offers an alliance to
+Pennsylvania Railroad
+String(s).replace(/[&
+That is the whole game
+Waiting for the others
+, and each of you takes
+State needs an own map.
+That is not valid JSON.
+wants to ally with you.
+Already rolled this turn
+Full screen was refused.
+Rejoin the online table.
+wants to trade with you.
+every table on the server
+Monopoline runs the table
+Mortgaged — nothing owed.
+Nobody left to deal with.
+Sell the buildings first.
+turns down the trade with
+Your own deed. Rest easy.
+A Conductor doubles these.
+a.depth-b.depth); return '
+Bankrupt / out of the game
+Could not reach the table.
+declines the alliance with
+Nothing left to liquidate.
+Roll to get things moving.
+Say something to the table.
+to answer your trade offer.
+Voice is for online tables.
+State needs a players array.
+The market, and Free Parking
+a.a===p.id||a.b===p.id); if(i
+Reset the server for everyone
+Tap the two faces you rolled.
+Write the announcement first.
+Choose your piece &amp; colour
+Speeding. Go directly to jail.
+to answer your alliance offer.
+'; else if(side==='top') band='
+A Grid Baron charges 10× / 20×.
+and open the address it prints.
+is bankrupt. Everything goes to
+'; else if(side==='left') band='
+Bank services open on your turn.
+Sell buildings (half price back)
+'+ band+blocks+ (o&&o.mortgaged?'
+Could not reach the table server.
+Dimmed options are already taken.
+Every deed goes back to the bank.
+That’s the tour. Have a good game.
+Pick up where this device left off.
+'+esc(p.name.toUpperCase())+' TO PLAY
+'+SVG.icon('help',17)+' Take the tour
+Watch along — the table updates live.
+Lightweight mode keeps the board flat.
+Nobody is free to ally with right now.
+This browser has no microphone access.
+files as an Accountant — tax reduced to
+While the pact holds you pay each other
+Do not pass GO. Do not collect a salary.
+You can start it any time from the menu.
+Alliances are switched off for this game.
+Notes you type here go into the game log.
+Tap a piece to change its shape or colour.
+The bank opens. Everyone takes their seat.
+Add it to your home screen to play offline.
+They set the house rules and start the game.
+Monopoline runs the table, you run the board.
+The game ends now and the standings are shown.
+=maxLevel()) return 'Fully developed.'; if(p.cash
+One tier above the hotel, paying 1.6× hotel rent.
+Online tables need the Monopoline server running.
+Turn a job off and it never appears in the draft.
+No game is running, so there is nothing to attach.
+'+ SVG.tokenSvg(q.token,q.color,14,top[0]-7,top[1]-7)+'
+Start a game first — the tour runs over the real table.
+A proposal is already on the table — wait for an answer.
+Nothing yet. Every dollar that moves gets recorded here.
+'+esc(BOARD[i].n)+(owner?' \u2014 '+esc(owner.name):'')+'
+bits.push(esc(BOARD[i].n)+(G.own[i]&&G.own[i].mortgaged?'
+ROUND '+G.round+ (G.cfg.economy?' MARKET '+G.economy:'')+'
+M4 3h16v18H4Zm2 2v14h12V5Zm2 2h8v2H8Zm0 4h8v2H8Zm0 4h5v2H8Z
+Step off at any station. You collect your salary if you pass GO.
+Drift up to three spaces either way, then resolve where you land.
+Games in progress stay on the server, but everyone is interrupted.
+This clears the saved game on this device and returns to the start.
+Nothing is hidden — the Log records every transaction as it happens.
+Want a quick tour of the table? Seven steps, over the real interface.
+Every player on every table gets a white screen telling them to reload.
+Half rent between you, a tenth of each other's takings, and a shared win.
+A market index drifts every round and scales all rent between ×0.70 and ×1.35.
+Pick one. It pays a bonus on every GO and bends a rule in your favour all game.
+Changes can only be applied on your turn — the table would reject them otherwise.
+Trade board positions with another player. Neither of you resolves the new space.
+What went wrong? What did you expect instead? Anything you did just before helps.
+The whole game state. Edit and apply — it is validated before anything is replaced.
+Positions, cash, deeds and the last 25 log lines. No names beyond the ones you typed.
+Report filed. If you can, keep playing — the log you sent includes the last 25 events.
+Interest accrues at 10% of the balance every time you pass GO. Repay any time from the Bank.
+of what the other collects from anyone else. If you are the last two standing you win together.
+G.own[x]&&G.own[x].owner===owner.id); if(o.houses===0) base=s.r[0]*(whole?2:1); else if(o.houses
+s.classList.add('rolling')); const t0=performance.now(), dur=TIMING.tumble; while(performance.now()-t0
+Roll, buy, build, collect. The app keeps the books; you play. You can run this tour again any time from Setup.
+Your job pays a bonus every time you pass GO and bends one rule all game. It levels up on your 3rd and 6th lap.
+Every dollar that moves is recorded here, colour-coded and live. If anyone doubts a number, this is the receipt.
+Chat lives behind this button. Online, you can also open a voice call from here so everyone can talk while they play.
+The reset covers every player's screen with a white notice telling them to reload. Nobody can carry on until they do.
+to ride to any railroad. You may do this as often as you like before rolling, and you collect your salary if you pass GO.
+This copy was opened straight from a file, so there is nothing to connect to. Pass &amp; play works fully offline — or run
+Bring any board, or none at all. This runs the bank, the deeds, the rent maths and the jobs — everything except the board itself.
+The name and cash at the top are always the player currently up. Online, a stripe down the side marks it when that player is you.
+Move a token on any board you like — or read positions off the Board tab. Every dollar, deed, rent calculation and card is handled here.
+Twelve palettes, 24 pieces, plain-English wording, and a lightweight mode that strips out animation. Set it up however suits your table.
+On your third lap your payday multiplies by one and a half; on your sixth it doubles. A job that looked small early becomes the reason you win late.
+The space your token is on, who owns it, and what it costs. Rent and purchase offers appear on their own — you are never asked to work out a number.
+If this copy is hosted as static files only, online play is unavailable and Pass &amp; play is the way to go. Otherwise check your connection and try again.
+Short of cash? Mortgage a deed for half its price. It stops earning rent until you pay it back, and lifting it costs 10% on top. Sell any buildings on it first.
+Land on an unowned space and you are offered it at the printed price. Take it, or press Skip and it simply stays with the bank for someone else to land on later.
+Roll here, then End turn here. It follows you across every tab, so you never have to hunt for it. Roll doubles and you go again — three in a row sends you to jail.
+You move a token on any board you like — or just read positions here. Every dollar, deed, rent calculation and card is handled for you, so nobody has to be the banker.
+Owning a property earns rent when others land on it. Own every property of one colour and the rent on those spaces doubles immediately, before you build anything at all.
+Every space with each player\u2019s piece on it. Tap any space to read its full title deed — rents at every level, mortgage value, building cost. Flat or 3D is up to you.
+Everyone picks a job from five offers at the start. It bends one rule permanently in your favour — cheaper building, less rent paid, better mortgages — for the whole game.
+Borrow up to $600, repaid whenever you like but growing 10% each lap. Rent insurance halves the next rent you have to pay. Both are optional and both are switched on in setup.
+In jail you can roll doubles, pay $50, or spend a Get Out of Jail Free card. Chance and Community Chest are drawn automatically when you land on them, and any money moves itself.
+Tap to roll and your token walks the board space by space. If you would rather roll real dice at the table, switch to physical dice in the setup screen and just type in what you rolled.
+Your job also pays a bonus every single time you pass GO, on top of the $200 salary. Some are flat, some grow with what you own. This card shows your rule and what it is worth right now.
+A market index drifts every round and scales everyone\u2019s rent between 0.7x and 1.35x — boom rounds are when hotels pay. Taxes and fees pile up on Free Parking for whoever lands there.
+An alliance halves the rent you pay each other, pays each of you a tenth of what the other collects from outsiders, and lets you win together if you outlast the table. One pact per player.
+Pass &amp; play shares one device. Online gives everyone their own screen: one person starts a table, the rest join with the four-letter code, and only the player whose turn it is can act.
+A full colour set doubles bare rent and unlocks building. Build on any property in a set you own — there is no need to raise the whole street evenly. Mortgages pay half and cost 10% extra to lift.
+With a full colour set you can build. Each house multiplies the rent sharply, and the fifth building becomes a hotel. Tap any deed you own to build on it — one property at a time, no even-build rule.

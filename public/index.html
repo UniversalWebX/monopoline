@@ -174,6 +174,43 @@ main{flex:1;padding:13px 13px 26px;display:flex;flex-direction:column;gap:11px}
 .sheet>.bd{padding:14px;overflow:auto;-webkit-overflow-scrolling:touch}
 .sheet>.ft{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
 .sheet>.ft .btn{flex:1;min-width:118px}
+/* Persian. The interface mirrors, but anything that encodes position or
+   quantity — the board, the dice, the money column — keeps reading left to
+   right, so the numbers match the ones on the table in front of you. */
+html.fa,html.fa body{font-family:Tahoma,'Segoe UI','Iranian Sans','Noto Naskh Arabic',system-ui,sans-serif}
+html.fa .disp,html.fa h1,html.fa h2,html.fa h3,html.fa .lbl,html.fa .badge,html.fa .pill{
+  font-family:Tahoma,'Segoe UI','Iranian Sans',system-ui,sans-serif;text-transform:none}
+/* letter-spacing was set for small-caps Latin labels; on Arabic script it only
+   pulls joined letters apart, so it comes off everywhere the language is on. */
+html.fa *{letter-spacing:normal!important}
+html.fa .brand,html.fa .mono,html.fa .num,html.fa .big,html.fa code,html.fa kbd{direction:ltr;unicode-bidi:isolate}
+html.fa svg,html.fa svg text{direction:ltr}
+html.fa #board,html.fa .boardwrap,html.fa .iso,html.fa .dice,html.fa .diceface{direction:ltr}
+html.fa input,html.fa textarea{text-align:start}
+html.fa input[type=number]{direction:ltr;text-align:left}
+html.fa .tokenpick,html.fa .colorpick,html.fa .skingrid{direction:ltr}
+/* The reel plays inside the app. It gets the whole screen and paints its own
+   near-black, because the trailer is one deliberately dark piece and should not
+   be tinted by whichever palette the table happens to be using. */
+#cinema{position:fixed;inset:0;z-index:120;background:#06070A;display:flex;flex-direction:column;
+  animation:cfade .2s ease-out}
+@keyframes cfade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#cinema{animation:none}}
+#cinema .cbar{display:flex;align-items:center;gap:9px;flex:0 0 auto;
+  padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top))}
+#cinema .cbar .rlbl{font-family:Bahnschrift,'DIN Alternate','Arial Narrow',system-ui,sans-serif;
+  font-size:11.5px;letter-spacing:.26em;text-transform:uppercase;color:#8A8F9C}
+#cinema .cbar .sp{flex:1}
+#cinema .cbar button{background:transparent;border:1px solid rgba(236,234,227,.22);color:#ECEAE3;
+  border-radius:var(--pill);padding:7px 14px;font:inherit;font-size:12.5px;letter-spacing:.05em;cursor:pointer}
+#cinema .cbar button:hover{border-color:#F2A007;color:#F2A007}
+#cinema .cbar button:focus-visible{outline:2px solid #F2A007;outline-offset:2px}
+#cinema .film{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 12px 14px}
+#cinema iframe{width:100%;height:100%;max-width:calc((100dvh - 104px) * 16 / 9);border:0;
+  border-radius:var(--r3);background:#08090C;box-shadow:0 30px 90px rgba(0,0,0,.62)}
+#cinema .film:fullscreen{padding:0}
+#cinema .film:fullscreen iframe{max-width:none;border-radius:0;height:100%}
+@media(max-width:700px){#cinema iframe{max-width:100%}}
 
 input[type=text],input[type=number],select,textarea{
   width:100%;padding:11px 12px;background:var(--bg);color:var(--text);border:1px solid var(--line2);font:inherit;
@@ -700,7 +737,8 @@ const SVG={
     bug:'M8 5.4 6.3 3.7l1.4-1.4L9.6 4.2a5.6 5.6 0 0 1 4.8 0l1.9-1.9 1.4 1.4L16 5.4A5.6 5.6 0 0 1 17.4 9H19V7h2v4h-2.1a6.8 6.8 0 0 1-.2 1.6L21 14l-1 1.8-2.4-1.4A6.6 6.6 0 0 1 13 17.9V11h-2v6.9a6.6 6.6 0 0 1-4.6-3.5L4 15.8 3 14l2.3-1.4A6.8 6.8 0 0 1 5.1 11H3V7h2v2h1.6A5.6 5.6 0 0 1 8 5.4Z',
     help:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Zm-.2 2.6c-2 0-3.4 1.2-3.5 3.1h2.1c.1-.8.6-1.3 1.4-1.3.7 0 1.3.5 1.3 1.1 0 .6-.3.9-1.1 1.5-.9.6-1.3 1.2-1.3 2.2v.5h2v-.4c0-.6.3-1 1.1-1.5 1-.6 1.5-1.4 1.5-2.4 0-1.7-1.4-2.8-3.5-2.8ZM12 15.6a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z',
     shield:'M12 2 4 5.2v6.2c0 4.8 3.3 9 8 10.4 4.7-1.4 8-5.6 8-10.4V5.2Zm0 2.3 6 2.4v4.7c0 3.6-2.4 6.9-6 8.2-3.6-1.3-6-4.6-6-8.2V6.7Zm-1 3.3v5h2V7.6Zm0 6.4v2h2v-2Z',
-    build:'M14.6 2.6 21.4 9.4l-2.8 2.8-2.1-2.1L5.4 21.2 2.8 18.6 13.7 7.7l-2.1-2.1Z'
+    build:'M14.6 2.6 21.4 9.4l-2.8 2.8-2.1-2.1L5.4 21.2 2.8 18.6 13.7 7.7l-2.1-2.1Z',
+    play:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6ZM10 8.2 16 12l-6 3.8Z'
   },
   icon(name,size,color){
     const d=SVG.icons[name]; if(!d) return '';
@@ -860,7 +898,8 @@ const PIECE_IMAGES={baghali:'./baghali.png'};
 const UI={screen:'home',tab:'turn',pendingState:null,modalDepth:0,
   iso:store.get('monopoline.iso')==='1',chatOpen:false,chatUnread:0,
   easy:store.get('monopoline.easy')==='1',
-  lite:store.get('monopoline.lite')==='1'};
+  lite:store.get('monopoline.lite')==='1',
+  fa:store.get('monopoline.lang')==='fa'};
 
 function defaultCfg(){return{
   start:1500, salary:200, freeParking:true, skyscrapers:true,
@@ -1324,10 +1363,65 @@ let toastT=null;
 function toast(msg){
   const r=$('#toastRoot');
   r.innerHTML=`<div class="toast">${esc(msg)}</div>`;
+  localize(r);
   clearTimeout(toastT); toastT=setTimeout(()=>r.innerHTML='',2400);
 }
 
 /* ══════════ modal engine ══════════ */
+/* The reel is its own document under ./showcase/. It is fetched only when asked
+   for and torn out of the tree on close, so the home screen never pays for it
+   and no animation loop keeps running behind the game. */
+function openTrailer(){
+  if($('#cinema')) return;
+  const prevOv=document.body.style.overflow;
+  const box=document.createElement('div');
+  box.id='cinema';
+  box.innerHTML=`<div class="cbar"><span class="rlbl">The reel</span><div class="sp"></div>
+      <button data-full>Full screen</button>
+      <button data-close>Close ✕</button></div>
+    <div class="film"><iframe title="Monopoline trailer" allow="fullscreen"
+      src="./showcase/index.html?embed=1${UI.fa?'&lang=fa':''}${UI.lite?'&still=1':''}"></iframe></div>`;
+  document.body.appendChild(box);
+  const frame=$('iframe',box);
+  function close(){
+    frame.src='about:blank';   // stop the reel before it leaves the tree
+    box.remove();
+    document.body.style.overflow=prevOv;
+    document.removeEventListener('keydown',onKey,true);
+    window.removeEventListener('message',onMsg);
+  }
+  // Escape belongs to the reel's viewer here, so take it before the game sees it.
+  function onKey(e){ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); } }
+  // The reel's end card asks to be closed rather than loading the game into the frame.
+  function onMsg(e){ if(e.data&&e.data.monopoline==='closeReel') close(); }
+  document.body.style.overflow='hidden';
+  $('[data-close]',box).onclick=close;
+  $('[data-full]',box).onclick=()=>{
+    const film=$('.film',box);
+    if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    else if(film.requestFullscreen) film.requestFullscreen().catch(()=>toast('Full screen was refused.'));
+  };
+  /* The reel is a second document sitting next to this one. Where the app has
+     been copied somewhere that file is not — a static export, a single-file
+     save — say so plainly instead of showing an empty black frame. */
+  frame.addEventListener('load',()=>{
+    let ok=false;
+    try{ ok=!!(frame.contentDocument&&frame.contentDocument.querySelector('.reel')); }
+    catch(e){ ok=true; }   // cross-origin means it loaded something real
+    if(ok) return;
+    const film=$('.film',box);
+    film.innerHTML='<div style="max-width:34ch;text-align:center;color:#B9BEC7;font-size:14px;line-height:1.6">'
+      +'<div style="color:#F2A007;font-size:12px;letter-spacing:.24em;margin-bottom:10px">NO REEL HERE</div>'
+      +'The trailer is a separate page that ships with the full app. This copy was opened on its own, '
+      +'so there is nothing to play.</div>';
+    localize(film);
+  });
+  localize(box);   // the bar lives outside #app, so it has to be asked directly
+  document.addEventListener('keydown',onKey,true);
+  window.addEventListener('message',onMsg);
+  setTimeout(()=>$('[data-close]',box).focus({preventScroll:true}),30);
+}
+
 function showModal(opts){
   return new Promise(resolve=>{
     UI.modalDepth++;
@@ -1349,7 +1443,6 @@ function showModal(opts){
     function redraw(){
       const r=opts.build(host,fin,redraw)||{};
       ft.innerHTML='';
-      if(UI.easy) plainWords(host);
       if(r.footer&&r.footer.length){
         ft.hidden=false;
         r.footer.forEach(b=>{
@@ -1360,9 +1453,10 @@ function showModal(opts){
           ft.appendChild(el);
         });
       } else ft.hidden=true;
+      localize(host); localize(ft);   // after the footer exists, not before
     }
     const xb=$('[data-x]',scrim); if(xb) xb.onclick=()=>fin(undefined);
-    if(UI.easy) plainWords(scrim);
+    localize(scrim);
     // keyboard: Escape closes a dismissable sheet, Tab stays inside it
     scrim.addEventListener('keydown',e=>{
       if(e.key==='Escape'&&opts.dismiss!==false){ e.preventDefault(); fin(undefined); return; }
@@ -1449,6 +1543,7 @@ function renderHome(){
       <div class="disp" style="font-size:30px;letter-spacing:.1em;text-transform:uppercase">Monopo<b style="color:var(--accent)">line</b></div>
       <p class="muted tiny" style="max-width:34ch;margin:8px auto 0">Bring any board, or none at all. This runs the bank, the deeds,
       the rent maths and the jobs — everything except the board itself.</p>
+      <button class="btn" data-a="trailer" style="margin:14px auto 0">${SVG.icon('play',16)} Watch the reel</button>
     </div></div>
     ${saved?`<div class="card"><div class="bd row"><div style="flex:1">
       <div class="lbl">Saved game</div><div class="tiny muted">Pick up where this device left off.</div></div>
@@ -2672,6 +2767,14 @@ function boardSvg(){
 
 /* ══════════ rendering ══════════ */
 function render(){
+  renderScreen();
+  localizeAll();
+}
+function localizeAll(){
+  ['#view','#readout','#tabs','#actionbar','#side','#chatPop','#hdrRound','#hdrNet']
+    .forEach(sel=>localize($(sel)));
+}
+function renderScreen(){
   const hdr=$('#hdrRound'), ro=$('#readout'), tabs=$('#tabs');
   renderNetChip();
   $('#brandMark').innerHTML=SVG.mark();
@@ -2727,7 +2830,6 @@ function render(){
   renderSide();
   renderChat();
   document.documentElement.classList.toggle('lite',!!UI.lite);
-  plainWords($('#view')); plainWords($('#readout')); plainWords($('#tabs')); plainWords($('#actionbar'));
   // count the cash readout rather than snapping it
   const vEl=$('#readout .v');
   if(vEl){
@@ -3094,8 +3196,16 @@ function renderSettings(){
     </label>`;
   v.innerHTML=`
     <div class="card"><div class="hd">${SVG.icon('gear',16)}<h3>Modes</h3></div><div class="bd">
-      ${mode('easy','Easy words','Swaps the game\u2019s jargon for plain language a five-year-old can follow — deeds become property cards, mortgages become borrowing.',UI.easy)}
+      ${UI.fa?'':mode('easy','Easy words','Swaps the game\u2019s jargon for plain language a five-year-old can follow — deeds become property cards, mortgages become borrowing.',UI.easy)}
       ${mode('lite','Lightweight','No animations, flat board, no voice chat. Everything that costs battery is switched off.',UI.lite)}
+    </div></div>
+
+    <div class="card"><div class="hd">${SVG.icon('chat',16)}<h3>Language</h3></div><div class="bd">
+      <div class="seg">
+        <button data-a="lang" data-v="en" aria-pressed="${!UI.fa}" data-nol10n>English</button>
+        <button data-a="lang" data-v="fa" aria-pressed="${!!UI.fa}" data-nol10n>فارسی</button>
+      </div>
+      ${UI.fa?'<div class="tiny muted" style="margin-top:8px">Easy words is written in English. Turn Persian off to use it.</div>':''}
     </div></div>
 
     <div class="card"><div class="hd">${SVG.icon('board',16)}<h3>Board</h3></div><div class="bd">
@@ -3115,6 +3225,7 @@ function renderSettings(){
       <button class="btn" data-a="rules">${SVG.icon('help',17)} How it works</button>
       <button class="btn" data-a="jobsInfo">${SVG.icon('people',17)} The jobs</button>
       <button class="btn" data-a="bug">${SVG.icon('bug',17)} Report a bug</button>
+      <button class="btn wide" data-a="trailer">${SVG.icon('play',17)} Watch the reel</button>
     </div></div>
 
 `;
@@ -3390,6 +3501,8 @@ const ACT={
   bug(){ reportBug(); },
   skins(){ chooseSkin(); },
   tutorial(){ startTutorial(); },
+  lang(v){ setLang(v); },
+  trailer(){ openTrailer(); },
   iso(v){
     if(v==='1'&&UI.lite){ toast('Lightweight mode keeps the board flat.'); return; }
     UI.iso=v==='1'; store.set('monopoline.iso',UI.iso?'1':'0'); render();
@@ -3913,6 +4026,659 @@ const EASY=[
   [/\bmatures\b/gi,'pays out'],[/\bassessed\b/gi,'charged']
 ];
 const EASY_SKIP={INPUT:1,TEXTAREA:1,SCRIPT:1,STYLE:1,SELECT:1,OPTION:1};
+/* ══════════ Persian ══════════
+   The interface is authored in English and translated on the way to the screen,
+   the same way Easy words works. Whole text nodes are matched first, which is
+   where almost every label, heading and button lands; anything left over goes
+   through the phrase pass, which is what catches the log lines built around a
+   player's name. Numbers and money stay in Latin digits so they read the same
+   as the amounts on the physical board next to you. */
+const FA={
+  /* ── the two decks ── */
+  "Advance to GO. Collect your salary.":"به GO بروید. حقوقتان را بگیرید.",
+  "Advance to Boardwalk.":"به بوردواک بروید.",
+  "Advance to St. Charles Place. If you pass GO, collect $200.":"به میدان سنت چارلز بروید. اگر از GO رد شدید، $200 بگیرید.",
+  "Advance to Illinois Avenue. If you pass GO, collect $200.":"به خیابان ایلینوی بروید. اگر از GO رد شدید، $200 بگیرید.",
+  "Advance to the nearest Railroad. Pay the owner twice the rental.":"به نزدیک‌ترین راه‌آهن بروید. دو برابر اجاره را به مالکش بدهید.",
+  "Advance to the nearest Utility. Pay 10× your roll if it is owned.":"به نزدیک‌ترین خدمات عمومی بروید. اگر مالک دارد، ۱۰× تاستان را بپردازید.",
+  "Bank pays you dividend of $50.":"بانک $50 سود سهام به شما می‌دهد.",
+  "Get Out of Jail Free. Keep it until you need it.":"آزادی از زندان. نگهش دارید تا وقتی لازمش داشتید.",
+  "Go back three spaces.":"سه خانه به عقب بروید.",
+  "Go directly to Jail. Do not pass GO, do not collect $200.":"یک‌راست به زندان. از GO رد نشوید، $200 نگیرید.",
+  "Make general repairs on all your property: $25 per house, $100 per hotel.":"همهٔ ملک‌هایتان را تعمیر کنید: $25 برای هر خانه، $100 برای هر هتل.",
+  "Speeding fine. Pay $15.":"جریمهٔ سرعت. $15 بپردازید.",
+  "Take a trip to Reading Railroad. If you pass GO, collect $200.":"سفری به راه‌آهن ریدینگ. اگر از GO رد شدید، $200 بگیرید.",
+  "You have been elected Chairman of the Board. Pay each player $50.":"به ریاست هیئت‌مدیره انتخاب شدید. به هر بازیکن $50 بدهید.",
+  "Your building loan matures. Collect $150.":"وام ساختمانتان سررسید شد. $150 بگیرید.",
+  "You have won a crossword competition. Collect $100.":"در مسابقهٔ جدول برنده شدید. $100 بگیرید.",
+  "Market surge. The index jumps and you collect $75.":"جهش بازار. شاخص بالا پرید و $75 می‌گیرید.",
+  "Bank error in your favour. Collect $200.":"اشتباه بانک به نفع شما. $200 بگیرید.",
+  "Sale of stock. Collect $50.":"فروش سهام. $50 بگیرید.",
+  "The inspector has questions. Go directly to jail.":"بازرس سؤال دارد. یک‌راست به زندان.",
+  "Grand Opera Night. Collect $50 from every player.":"شب بزرگ اپرا. از هر بازیکن $50 بگیرید.",
+  "It is your birthday. Collect $10 from each player.":"تولدتان است. از هر بازیکن $10 بگیرید.",
+  "Income tax refund. Collect $20.":"برگشت مالیات بر درآمد. $20 بگیرید.",
+  "Holiday fund matures. Receive $100.":"صندوق تعطیلات سررسید شد. $100 بگیرید.",
+  "Life insurance matures. Collect $100.":"بیمهٔ عمر سررسید شد. $100 بگیرید.",
+  "You have won second prize in a beauty contest. Collect $10.":"در مسابقهٔ زیبایی دوم شدید. $10 بگیرید.",
+  "You inherit $100.":"$100 به ارث بردید.",
+  "Hospital fees. Pay $100.":"هزینهٔ بیمارستان. $100 بپردازید.",
+  "School fees. Pay $50 — but your next payday is doubled.":"شهریهٔ مدرسه. $50 بپردازید — اما پاداش بعدی‌تان دو برابر می‌شود.",
+  "Receive $25 consultancy fee.":"$25 حق مشاوره بگیرید.",
+  "You are assessed for street repairs: $40 per house, $115 per hotel.":"برای تعمیر خیابان از شما گرفته می‌شود: $40 هر خانه، $115 هر هتل.",
+  "Audit. Pay $10 for every deed you hold.":"حسابرسی. برای هر سندی که دارید $10 بپردازید.",
+  "From sale of stock you get $50.":"از فروش سهام $50 می‌گیرید.",
+  "Take it":"برش‌دار",
+  "Take the deed":"سند را بردار",
+
+  /* ── house rules, panels, board labels ── */
+  "Taxes and fees pile up in the middle":"مالیات‌ها و جریمه‌ها وسط جمع می‌شوند",
+  "One upgrade beyond the hotel":"یک پله بالاتر از هتل",
+  "Living economy":"اقتصاد زنده",
+  "A market index nudges all rent each round":"یک شاخص بازار هر دور همهٔ اجاره‌ها را جابه‌جا می‌کند",
+  "Bank loans":"وام بانکی",
+  "Borrow up to $600 at 10% per lap":"تا $600 وام با ۱۰٪ در هر دور",
+  "Pacts between two players: half rent, a tithe, and a shared win":"پیمان میان دو بازیکن: نصف اجاره، یک‌دهم سهم، و بردی مشترک",
+  "Pass-the-device screen":"صفحهٔ دست‌به‌دست کردن",
+  "Announce each new turn when sharing one screen":"وقتی یک صفحه مشترک است، هر نوبت تازه را اعلام کن",
+  "No animations, flat board, no voice chat. Everything that costs battery is switched off.":"بدون انیمیشن، تخته تخت، بدون تماس صوتی. هر چیزی که باتری می‌خورد خاموش می‌شود.",
+  "Swaps the game’s jargon for plain language a five-year-old can follow — deeds become property cards, mortgages become borrowing.":"اصطلاح‌های بازی را به زبانی ساده تبدیل می‌کند که یک بچهٔ پنج‌ساله هم بفهمد.",
+  "Now playing":"حالا نوبتِ",
+  "Roll from the bar below":"از نوار پایین تاس بریزید",
+  "Alliance":"اتحاد",
+  "No job action":"شغلتان کاری برای انجام ندارد",
+  "The bank opens. Everyone takes their seat.":"بانک باز شد. همه سر جایشان می‌نشینند.",
+  "turn":"نوبت",
+  "Show me":"نشانم بده",
+  "Unclaimed":"بی‌صاحب",
+  "Rent":"اجاره",
+  "With colour set":"با ست رنگی کامل",
+  "1 house":"۱ خانه",
+  "2 houses":"۲ خانه",
+  "3 houses":"۳ خانه",
+  "4 houses":"۴ خانه",
+  "Hotel":"هتل",
+  "Skyscraper":"آسمان‌خراش",
+  "$50 each":"هرکدام $50",
+  "Fully developed.":"کاملاً ساخته شده.",
+  "MEDITERRANEAN AVE":"خ. مدیترانه",
+  "BALTIC AVE":"خ. بالتیک",
+  "ORIENTAL AVE":"خ. اورینتال",
+  "VERMONT AVE":"خ. ورمانت",
+  "CONNECTICUT AVE":"خ. کانکتیکات",
+  "ST. CHARLES PL":"م. سنت چارلز",
+  "STATES AVE":"خ. استیتس",
+  "VIRGINIA AVE":"خ. ویرجینیا",
+  "ST. JAMES PL":"م. سنت جیمز",
+  "TENNESSEE AVE":"خ. تنسی",
+  "NEW YORK AVE":"خ. نیویورک",
+  "KENTUCKY AVE":"خ. کنتاکی",
+  "INDIANA AVE":"خ. ایندیانا",
+  "ILLINOIS AVE":"خ. ایلینوی",
+  "ATLANTIC AVE":"خ. آتلانتیک",
+  "VENTNOR AVE":"خ. ونتنور",
+  "MARVIN GDNS":"باغ ماروین",
+  "PACIFIC AVE":"خ. پاسیفیک",
+  "N. CAROLINA AVE":"خ. کارولینای ش.",
+  "PENNSYLVANIA AVE":"خ. پنسیلوانیا",
+  "PARK PL":"م. پارک",
+  "BOARDWALK":"بوردواک",
+  "READING RR":"راه‌آهن ریدینگ",
+  "PENNSYLVANIA RR":"راه‌آهن پنسیلوانیا",
+  "B&O RR":"راه‌آهن بی‌اواُ",
+  "SHORT LINE":"شورت لاین",
+  "ELECTRIC CO":"شرکت برق",
+  "WATER WORKS":"تصفیه‌خانهٔ آب",
+  "INCOME TAX":"مالیات درآمد",
+  "LUXURY TAX":"مالیات تجمل",
+  "FREE PARKING":"پارکینگ رایگان",
+  "GO TO JAIL":"برو به زندان",
+  "CHANCE":"شانس",
+  "CHEST":"صندوق",
+  "JAIL":"زندان",
+
+  /* ── palettes ── */
+  'Ink & Gold':'جوهر و طلا','Atlantic Deco':'دکوی آتلانتیک','Neon Arcade':'گیم‌نت نئون',
+  'Parchment':'کاغذ پوستی','Emerald Club':'باشگاه زمرد','Coral Reef':'صخرهٔ مرجانی',
+  'Monochrome':'تک‌رنگ','Sunset Strip':'غروب','Forest Floor':'کف جنگل',
+  'Cherry Ink':'جوهر گیلاسی','Arctic':'قطبی','Blueprint':'نقشهٔ فنی',
+
+  /* ── the tour ── */
+  "Monopoline runs the table":"مونوپولاین میز را می‌گرداند",
+  "You move a token on any board you like — or just read positions here. Every dollar, deed, rent calculation and card is handled for you, so nobody has to be the banker.":"شما مهره را روی هر تخته‌ای که دوست دارید حرکت می‌دهید — یا فقط موقعیت‌ها را همین‌جا می‌خوانید. هر دلار، هر سند، حساب اجاره و کارت‌ها اینجا انجام می‌شود، پس لازم نیست کسی بانکدار باشد.",
+  "The name and cash at the top are always the player currently up. Online, a stripe down the side marks it when that player is you.":"نام و پولی که بالا می‌بینید همیشه مال بازیکنی است که نوبتش است. در حالت آنلاین، وقتی آن بازیکن شما باشید نواری کنار صفحه آن را نشان می‌دهد.",
+  "Roll here, then End turn here. It follows you across every tab, so you never have to hunt for it. Roll doubles and you go again — three in a row sends you to jail.":"اینجا تاس بریزید، بعد همین‌جا نوبت را تمام کنید. این دکمه در همهٔ زبانه‌ها همراهتان است، پس هیچ‌وقت دنبالش نمی‌گردید. جفت بیاورید دوباره می‌ریزید — سه جفت پشت‌سرهم شما را به زندان می‌فرستد.",
+  "Tap to roll and your token walks the board space by space. If you would rather roll real dice at the table, switch to physical dice in the setup screen and just type in what you rolled.":"بزنید تا تاس بریزد و مهره‌تان خانه‌به‌خانه روی تخته راه برود. اگر ترجیح می‌دهید سر میز تاس واقعی بیندازید، در تنظیمات به تاس واقعی تغییر بدهید و فقط عددی را که آوردید وارد کنید.",
+  "The space your token is on, who owns it, and what it costs. Rent and purchase offers appear on their own — you are never asked to work out a number.":"خانه‌ای که مهره‌تان روی آن است، مالکش، و قیمتش. پیشنهاد اجاره و خرید خودشان ظاهر می‌شوند — هیچ‌وقت از شما خواسته نمی‌شود عددی را حساب کنید.",
+  "Land on an unowned space and you are offered it at the printed price. Take it, or press Skip and it simply stays with the bank for someone else to land on later.":"روی خانه‌ای بی‌صاحب فرود بیایید و همان قیمت روی تابلو به شما پیشنهاد می‌شود. بخریدش، یا «رد کن» را بزنید تا پیش بانک بماند برای کسی که بعداً روی آن فرود می‌آید.",
+  "Owning a property earns rent when others land on it. Own every property of one colour and the rent on those spaces doubles immediately, before you build anything at all.":"داشتن یک ملک وقتی دیگران رویش فرود بیایند اجاره می‌آورد. اگر همهٔ ملک‌های یک رنگ را داشته باشید، اجارهٔ آن خانه‌ها همان لحظه دو برابر می‌شود، پیش از آنکه چیزی بسازید.",
+  "With a full colour set you can build. Each house multiplies the rent sharply, and the fifth building becomes a hotel. Tap any deed you own to build on it — one property at a time, no even-build rule.":"با یک ست رنگی کامل می‌توانید بسازید. هر خانه اجاره را به‌شدت چند برابر می‌کند، و ساختمان پنجم هتل می‌شود. روی هر سندی که دارید بزنید تا رویش بسازید — یکی‌یکی، بدون قانون ساخت یکنواخت.",
+  "One tier above the hotel, and unique to this game. A skyscraper costs the same as another house and pays about 1.6 times hotel rent — the most expensive thing you can land on. Switch them off before the game if you would rather stop at hotels.":"یک پله بالاتر از هتل، و مخصوص همین بازی. آسمان‌خراش به اندازهٔ یک خانهٔ دیگر خرج دارد و حدود ۱٫۶ برابر اجارهٔ هتل می‌دهد — گران‌ترین چیزی که می‌شود رویش فرود آمد. اگر ترجیح می‌دهید تا هتل بس کنید، پیش از بازی خاموششان کنید.",
+  "Short of cash? Mortgage a deed for half its price. It stops earning rent until you pay it back, and lifting it costs 10% on top. Sell any buildings on it first.":"پول کم آورده‌اید؟ سندی را به نصف قیمتش رهن بگذارید. تا وقتی پس ندهید اجاره نمی‌آورد، و آزاد کردنش ۱۰٪ اضافه دارد. اول ساختمان‌های رویش را بفروشید.",
+  "Everyone picks a job from five offers at the start. It bends one rule permanently in your favour — cheaper building, less rent paid, better mortgages — for the whole game.":"هر کس در شروع از میان پنج پیشنهاد یک شغل برمی‌دارد. آن شغل تا آخر بازی یک قانون را همیشه به نفع شما خم می‌کند — ساخت ارزان‌تر، اجارهٔ کمتر، رهن بهتر.",
+  "Your job also pays a bonus every single time you pass GO, on top of the $200 salary. Some are flat, some grow with what you own. This card shows your rule and what it is worth right now.":"شغلتان هر بار که از GO رد شوید پاداشی هم می‌دهد، جدا از حقوق ۲۰۰ دلاری. بعضی ثابت‌اند، بعضی با دارایی‌تان بزرگ می‌شوند. این کارت قانون شما و ارزش همین حالای آن را نشان می‌دهد.",
+  "On your third lap your payday multiplies by one and a half; on your sixth it doubles. A job that looked small early becomes the reason you win late.":"در دور سوم پاداشتان یک‌ونیم برابر می‌شود؛ در دور ششم دو برابر. شغلی که اول کم‌اهمیت به نظر می‌رسید، آخر بازی دلیل بردتان می‌شود.",
+  "A market index drifts every round and scales everyone’s rent between 0.7x and 1.35x — boom rounds are when hotels pay. Taxes and fees pile up on Free Parking for whoever lands there.":"یک شاخص بازار هر دور جابه‌جا می‌شود و اجارهٔ همه را بین ۰٫۷ تا ۱٫۳۵ برابر می‌کند — دورهای رونق همان وقتی است که هتل‌ها پول می‌دهند. مالیات‌ها و جریمه‌ها روی پارکینگ رایگان جمع می‌شوند برای کسی که آنجا فرود بیاید.",
+  "Every space with each player’s piece on it. Tap any space to read its full title deed — rents at every level, mortgage value, building cost. Flat or 3D is up to you.":"همهٔ خانه‌ها با مهرهٔ هر بازیکن روی آنها. روی هر خانه بزنید تا سند کاملش را ببینید — اجاره در هر سطح، ارزش رهن، هزینهٔ ساخت. تخت یا سه‌بعدی، به سلیقهٔ خودتان.",
+  "Borrow up to $600, repaid whenever you like but growing 10% each lap. Rent insurance halves the next rent you have to pay. Both are optional and both are switched on in setup.":"تا ۶۰۰ دلار وام بگیرید، هر وقت خواستید پس بدهید اما هر دور ۱۰٪ بزرگ‌تر می‌شود. بیمهٔ اجاره، اجارهٔ بعدی‌تان را نصف می‌کند. هر دو اختیاری‌اند و هر دو در تنظیمات روشن می‌شوند.",
+  "In jail you can roll doubles, pay $50, or spend a Get Out of Jail Free card. Chance and Community Chest are drawn automatically when you land on them, and any money moves itself.":"در زندان می‌توانید جفت بیاورید، ۵۰ دلار بدهید، یا کارت «آزادی از زندان» را خرج کنید. کارت شانس و صندوق اجتماع وقتی رویشان فرود بیایید خودکار کشیده می‌شوند، و پول‌ها خودشان جابه‌جا می‌شوند.",
+  "Trade deeds and cash with anyone — both sides confirm before it goes through. An alliance goes further: half rent between the two of you, a tenth of what your ally collects from everyone else, and a shared win if you outlast the table.":"سند و پول را با هر کسی معامله کنید — پیش از انجام شدن، هر دو طرف تأیید می‌کنند. اتحاد یک قدم جلوتر می‌رود: نصف اجاره بین شما دو نفر، یک‌دهم آنچه هم‌پیمانتان از بقیه می‌گیرد، و بردی مشترک اگر از همهٔ میز دوام بیاورید.",
+  "Chat lives behind this button. Online, you can also open a voice call from here so everyone can talk while they play.":"گفت‌وگو پشت این دکمه است. در حالت آنلاین می‌توانید از همین‌جا تماس صوتی هم باز کنید تا همه حین بازی حرف بزنند.",
+  "Every dollar that moves is recorded here, colour-coded and live. If anyone doubts a number, this is the receipt.":"هر دلاری که جابه‌جا می‌شود همین‌جا ثبت می‌شود، رنگی و زنده. اگر کسی به عددی شک کرد، این همان رسید است.",
+  "Twelve palettes, 24 pieces, plain-English wording, and a lightweight mode that strips out animation. Set it up however suits your table.":"دوازده رنگ‌بندی، ۲۴ مهره، واژه‌های ساده، و حالتی سبک که انیمیشن‌ها را برمی‌دارد. هرطور که به میزتان می‌آید تنظیمش کنید.",
+  "Roll, buy, build, collect. The app keeps the books; you play. You can run this tour again any time from Setup.":"تاس بریزید، بخرید، بسازید، جمع کنید. برنامه حساب‌ها را نگه می‌دارد؛ شما بازی می‌کنید. هر وقت خواستید از تنظیمات دوباره این راهنما را ببینید.",
+  "Step":"قدم",
+  "Next":"بعدی",
+
+  /* ── shell, tabs, chrome ── */
+  'Setup':'تنظیمات','Turn':'نوبت','Board':'تخته','Bank':'بانک','Deeds':'سندها','Log':'گزارش',
+  'Menu':'منو','Toggle theme':'تغییر روشنایی','Table overview':'نمای کلی میز',
+  'Open table talk':'گفت‌وگوی میز','Close':'بستن','Close ✕':'بستن ✕','Back':'بازگشت','Done':'انجام شد',
+  'Cancel':'انصراف','Apply':'اعمال','OK':'باشه','Send':'ارسال','Accept':'قبول','Decline':'رد',
+  'Review':'بازبینی','Skip':'رد کن','Save now':'ذخیره','Copied:':'کپی شد:','Full screen':'تمام‌صفحه',
+  'Actions':'کارها','Balance':'موجودی','Statistics':'آمار','Ledger':'دفتر کل',
+
+  /* ── home ── */
+  'Monopoline runs the table, you run the board.':'مونوپولاین میز را می‌گرداند، تخته با شماست.',
+  'Bring any board, or none at all. This runs the bank, the deeds, the rent maths and the jobs — everything except the board itself.':
+    'هر تخته‌ای که دارید بیاورید، یا اصلاً هیچ. این برنامه بانک، سندها، حساب اجاره و شغل‌ها را می‌گرداند — همه‌چیز جز خودِ تخته.',
+  'Saved game':'بازی ذخیره‌شده','Resume':'ادامه','Rejoin':'پیوستن دوباره',
+  'Pick up where this device left off.':'از همان‌جا که این دستگاه رها کرده بود ادامه بدهید.',
+  'Rejoin the online table.':'به میز آنلاین برگردید.',
+  'Pass &amp; play · one device':'نوبتی · یک دستگاه','Pass & play · one device':'نوبتی · یک دستگاه',
+  'Play online · own devices':'آنلاین · هر کس با دستگاه خودش',
+  'How it works':'چطور کار می‌کند','How It Works':'چطور کار می‌کند','The jobs':'شغل‌ها','The Jobs':'شغل‌ها',
+  'Report a bug':'گزارش ایراد','Reset everything':'پاک کردن همه‌چیز','Watch the reel':'تماشای تیزر',
+  'The reel':'تیزر','Add it to your home screen to play offline.':'به صفحهٔ اصلی اضافه‌اش کنید تا آفلاین هم بازی کنید.',
+
+  /* ── setup ── */
+  'The Table':'میز','House Rules':'قوانین خانگی','Seats':'صندلی‌ها',
+  'Deal Everyone In':'شروع بازی','+ Add player':'+ افزودن بازیکن',
+  'Tap a piece to change its shape or colour.':'روی مهره بزنید تا شکل یا رنگش را عوض کنید.',
+  'Starting cash':'پول اولیه','GO salary':'حقوق عبور از GO','Dice':'تاس',
+  'Roll in app':'تاس در برنامه','I roll real dice':'تاس واقعی می‌ریزم',
+  'Jobs':'شغل‌ها','Jobs.':'شغل‌ها.','Draft 1 of 2':'انتخاب از میان چند شغل','Random':'تصادفی','No jobs':'بدون شغل',
+  'Turn a job off and it never appears in the draft.':'هر شغلی را خاموش کنید دیگر در انتخاب ظاهر نمی‌شود.',
+  'Free Parking':'پارکینگ رایگان','Skyscrapers':'آسمان‌خراش‌ها','Skyscrapers.':'آسمان‌خراش‌ها.',
+  'The economy.':'اقتصاد.','Alliances':'اتحادها','Alliances.':'اتحادها.',
+  'Loans and insurance':'وام و بیمه','Pass the device':'دست‌به‌دست کردن دستگاه',
+  'Room name':'نام اتاق','Table name':'نام میز',
+
+  /* ── turn ── */
+  'Roll the dice':'تاس بریز','Roll':'بریز','Your Roll':'تاس شما','The dice':'تاس',
+  'End turn':'پایان نوبت','Next up':'نفر بعد','Whose turn it is':'نوبت چه کسی است',
+  'Where you landed':'جایی که فرود آمدید','Your job':'شغل شما','Your piece':'مهرهٔ شما',
+  'On hand':'موجودی نقد','Net worth':'دارایی خالص','Net':'خالص','List price':'قیمت روی تابلو',
+  'Buy':'خرید','Pay Rent':'پرداخت اجاره','Rent Due':'اجاره بدهکارید','Pay Up':'پرداخت',
+  'Unclaimed Deed':'ملک بی‌صاحب','Buying property':'خرید ملک','Deed':'سند','Deed updated':'سند به‌روز شد',
+  'Held by':'در اختیار','Owned by':'مالک','— bank —':'— بانک —','— none —':'— هیچ —',
+  'You owe':'بدهکارید','Payday':'پاداش شغلی','Market index':'شاخص بازار','Market':'بازار',
+  'In jail':'در زندان','Jail':'زندان','Jail / Just Visiting':'زندان / فقط بازدید',
+  'Post bail':'پرداخت وثیقه','Use card':'استفاده از کارت','Nudge':'جابه‌جایی کوچک',
+  'Swap Places':'جابه‌جایی با بازیکن','Ride the Line':'سوار شدن بر خط','Ride the Rails':'سوار قطار',
+  'Already rolled this turn':'این نوبت تاس ریخته‌اید',
+  'Roll to get things moving.':'تاس بریزید تا کار راه بیفتد.',
+  'Three doubles.':'سه بار جفت.','Caught.':'گیر افتادید.','Covered.':'پوشش داده شد.',
+  'Your own deed. Rest easy.':'سند خودتان است. خیالتان راحت.',
+  'Mortgaged — nothing owed.':'در رهن است — چیزی بدهکار نیستید.',
+  'Empty the jail':'خالی کردن زندان','Bank services open on your turn.':'خدمات بانک در نوبت خودتان باز می‌شود.',
+
+  /* ── bank ── */
+  'Borrow':'وام','Repay':'بازپرداخت','Bank Loan':'وام بانکی','Repay Loan':'بازپرداخت وام',
+  'Insurance':'بیمه','Insurance costs':'هزینهٔ بیمه','Outstanding loan':'وام تسویه‌نشده',
+  'Raise Funds':'تأمین پول','Declare Bankruptcy':'اعلام ورشکستگی','Give Up?':'تسلیم می‌شوید؟',
+  'Mortgage':'رهن','Mortgaging':'به رهن گذاشتن','Lift mortgage':'آزاد کردن از رهن',
+  'Mortgage deeds':'به رهن گذاشتن سندها','Mortgage value':'ارزش رهن','Mortgaged':'در رهن',
+  'Sell building':'فروش ساختمان','Building cost':'هزینهٔ ساخت','Houses and hotels':'خانه‌ها و هتل‌ها',
+  'Sell buildings (half price back)':'فروش ساختمان‌ها (نصف قیمت برمی‌گردد)',
+  'Nothing left to liquidate.':'چیزی برای نقد کردن نمانده.','You are maxed out.':'به سقف رسیده‌اید.',
+  'Nothing to repair.':'چیزی برای درست کردن نیست.','Nothing on the books.':'چیزی در دفتر ثبت نشده.',
+  'Sell the buildings first.':'اول ساختمان‌ها را بفروشید.','Fully developed.':'کاملاً ساخته شده.',
+  'Keep at least':'دست‌کم نگه دارید','No deeds yet.':'هنوز سندی ندارید.',
+
+  /* ── trade & alliance ── */
+  'Trade':'معامله','Trade offered':'معامله پیشنهاد شد','Trading with':'معامله با',
+  'Send this offer?':'این پیشنهاد فرستاده شود؟','That trade is empty.':'این معامله خالی است.',
+  'No tradable deeds.':'سند قابل معامله‌ای نیست.','Nobody left to deal with.':'کسی برای معامله نمانده.',
+  'Alliance offered':'اتحاد پیشنهاد شد','Allied with':'هم‌پیمان با','Break the pact':'شکستن پیمان',
+  'Clear all alliances':'پاک کردن همهٔ اتحادها','half rent':'نصف اجاره',
+  'Nobody is free to ally with right now.':'الان کسی برای اتحاد آزاد نیست.',
+  'Alliances are switched off for this game.':'اتحادها در این بازی خاموش‌اند.',
+  'A proposal is already on the table — wait for an answer.':'یک پیشنهاد روی میز است — منتظر پاسخ بمانید.',
+  'Half rent between you, a tenth of each other’s takings, and a shared win.':
+    'نصف اجاره بین خودتان، یک‌دهم درآمد یکدیگر، و بردی مشترک.',
+  'Nobody to swap with.':'کسی برای جابه‌جایی نیست.',
+
+  /* ── board & log ── */
+  'The Line · 40 spaces':'مسیر · ۴۰ خانه','The board':'تخته','The log':'گزارش','Table Log':'گزارش میز',
+  'Just Happened':'همین حالا','Show older entries':'نمایش موارد قدیمی‌تر',
+  'Nothing yet. Every dollar that moves gets recorded here.':'هنوز چیزی نیست. هر دلاری که جابه‌جا شود اینجا ثبت می‌شود.',
+  'Nothing is hidden — the Log records every transaction as it happens.':'چیزی پنهان نیست — گزارش هر تراکنش را همان لحظه ثبت می‌کند.',
+  'Notes you type here go into the game log.':'یادداشتی که اینجا بنویسید در گزارش بازی ثبت می‌شود.',
+  'Table Talk':'گفت‌وگوی میز','Say something to the table.':'چیزی به میز بگویید.',
+  'Talking to the table':'گفت‌وگو با میز','Nobody on the call':'کسی در تماس نیست',
+  'Voice is for online tables.':'تماس صوتی برای میزهای آنلاین است.',
+  'This browser has no microphone access.':'این مرورگر به میکروفون دسترسی ندارد.',
+  'Final Standings':'رده‌بندی پایانی','Table overview':'نمای کلی میز','Bankrupt':'ورشکسته','bankrupt':'ورشکسته',
+  'Bankrupt / out of the game':'ورشکسته / خارج از بازی','New Game':'بازی جدید','out':'خارج',
+
+  /* ── online ── */
+  'Play Online':'بازی آنلاین','Start a new table':'ساختن میز تازه','Join with a code':'پیوستن با کد',
+  'Copy code':'کپی کد','Copy link':'کپی پیوند','Leave table':'ترک میز','Leave the table':'ترک میز',
+  'Waiting for players…':'در انتظار بازیکنان…','Waiting for the host':'در انتظار میزبان',
+  'Waiting for the others':'در انتظار بقیه','Waiting for':'در انتظار',
+  'They set the house rules and start the game.':'قوانین را او تعیین می‌کند و بازی را شروع می‌کند.',
+  'Watch along — the table updates live.':'تماشا کنید — میز زنده به‌روز می‌شود.',
+  'Could not join':'نتوانستیم بپیوندیم','Could not rejoin':'نتوانستیم برگردیم',
+  'Could not connect':'اتصال برقرار نشد','Could not reach the table.':'به میز نرسیدیم.',
+  'Could not reach the table server.':'به سرور میز نرسیدیم.',
+  'Online tables need the Monopoline server running.':'میز آنلاین نیاز دارد سرور مونوپولاین در حال اجرا باشد.',
+  'Two ways to play.':'دو راه برای بازی.',
+  'Pass &amp; play shares one device. Online gives everyone their own screen: one person starts a table, the rest join with the four-letter code, and only the player whose turn it is can act.':
+    'حالت نوبتی یک دستگاه را بین همه دست‌به‌دست می‌کند. حالت آنلاین به هر کس صفحهٔ خودش را می‌دهد: یک نفر میز را می‌سازد، بقیه با کد چهارحرفی می‌پیوندند، و فقط کسی که نوبتش است می‌تواند کاری کند.',
+
+  /* ── settings ── */
+  'Modes':'حالت‌ها','Look':'ظاهر','Help':'راهنما','Theme':'پوسته','Palette':'رنگ‌بندی',
+  'Light or dark':'روشن یا تیره','Flat':'تخت','3D':'سه‌بعدی','Colour':'رنگ','Shape':'شکل',
+  'Easy words':'واژه‌های ساده','Lightweight':'حالت سبک','Language':'زبان',
+  'Easy words is written in English. Turn Persian off to use it.':'واژه‌های ساده به انگلیسی نوشته شده. برای استفاده از آن فارسی را خاموش کنید.',
+  'Lightweight mode keeps the board flat.':'حالت سبک تخته را تخت نگه می‌دارد.',
+  'Take the tour':'شروع راهنما','First time?':'بار اول است؟',
+  'Making it yours':'به سلیقهٔ خودتان',
+
+  /* ── board spaces ── */
+  'GO':'GO','Community Chest':'صندوق اجتماع','Chance':'شانس',
+  'Income Tax':'مالیات بر درآمد','Luxury Tax':'مالیات تجملات','Go To Jail':'برو به زندان',
+  'Reading Railroad':'راه‌آهن ریدینگ','Pennsylvania Railroad':'راه‌آهن پنسیلوانیا',
+  'B. & O. Railroad':'راه‌آهن بی. اند او.','Short Line':'شورت لاین',
+  'Electric Company':'شرکت برق','Water Works':'تصفیه‌خانهٔ آب',
+  'Mediterranean Avenue':'خیابان مدیترانه','Baltic Avenue':'خیابان بالتیک',
+  'Oriental Avenue':'خیابان اورینتال','Vermont Avenue':'خیابان ورمانت',
+  'Connecticut Avenue':'خیابان کانکتیکات','St. Charles Place':'میدان سنت چارلز',
+  'States Avenue':'خیابان استیتس','Virginia Avenue':'خیابان ویرجینیا',
+  'St. James Place':'میدان سنت جیمز','Tennessee Avenue':'خیابان تنسی',
+  'New York Avenue':'خیابان نیویورک','Kentucky Avenue':'خیابان کنتاکی',
+  'Indiana Avenue':'خیابان ایندیانا','Illinois Avenue':'خیابان ایلینوی',
+  'Atlantic Avenue':'خیابان آتلانتیک','Ventnor Avenue':'خیابان ونتنور',
+  'Marvin Gardens':'باغ‌های ماروین','Pacific Avenue':'خیابان پاسیفیک',
+  'North Carolina Avenue':'خیابان کارولینای شمالی','Pennsylvania Avenue':'خیابان پنسیلوانیا',
+  'Park Place':'میدان پارک','Boardwalk':'بوردواک',
+  'Brown':'قهوه‌ای','Light Blue':'آبی روشن','Pink':'صورتی','Orange':'نارنجی','Red':'قرمز',
+  'Yellow':'زرد','Green':'سبز','Dark Blue':'آبی تیره','Railroad':'راه‌آهن','Utility':'خدمات عمومی',
+  'One utility':'یک خدمات عمومی','Both utilities':'هر دو خدمات عمومی','These reach':'اینها می‌رسند به',
+  'A Conductor doubles these.':'کاندَکتور اینها را دو برابر می‌کند.',
+  'A Grid Baron charges 10× / 20×.':'گرید بارون ۱۰× / ۲۰× می‌گیرد.',
+
+  /* ── job names ── */
+  'Architect':'معمار','Broker':'دلال','Conductor':'کاندَکتور','Landlord':'مالک',
+  'Barrister':'وکیل','Gambler':'قمارباز','Grid Baron':'بارون برق','Train Operator':'راننده قطار',
+  'Tycoon':'غول تجارت','Insurer':'بیمه‌گر','Drifter':'دوره‌گرد','Accountant':'حسابدار',
+  'Bailiff':'مأمور اجرا','Mogul':'سرمایه‌دار','Surveyor':'نقشه‌بردار','Notary':'محضردار',
+  'Foreman':'سرکارگر','Realtor':'بنگاه‌دار','Nightwatchman':'نگهبان شب','Speculator':'سفته‌باز',
+  'Philanthropist':'نیکوکار','Toll Keeper':'عوارضی‌بان','Heir':'وارث','Tax Collector':'مأمور مالیات',
+  'Locksmith':'قفل‌ساز','Cartographer':'نقشه‌کش','Union Boss':'رئیس اتحادیه','Financier':'سرمایه‌گذار',
+  'Diplomat':'دیپلمات','Job Draft':'انتخاب شغل','Getting promoted':'ترفیع گرفتن',
+
+  /* ── job taglines ── */
+  'Builds cheap':'ارزان می‌سازد','Commission':'پورسانت','Rides the line':'سوار خط است',
+  'Skims the top':'از بالا برمی‌دارد','Reads the fine print':'ریزِ قرارداد را می‌خواند',
+  'Presses luck':'شانس را می‌آزماید','Owns the wires':'مالک سیم‌هاست','Runs the line':'خط را می‌گرداند',
+  'Builds empires':'امپراتوری می‌سازد','Hedges everything':'همه‌چیز را پوشش می‌دهد',
+  'Never quite still':'هیچ‌وقت آرام نمی‌گیرد','Reads the code':'قانون را بلد است',
+  'Turns the key':'کلید را می‌چرخاند','Collects sets':'ست جمع می‌کند','Knows the ground':'زمین را می‌شناسد',
+  'Files the paperwork':'کاغذبازی را انجام می‌دهد','Salvages well':'خوب آب می‌کند','Takes a cut':'سهمش را برمی‌دارد',
+  'Paid by the shift':'شیفتی حقوق می‌گیرد','Rides the index':'سوار شاخص است','Writes it off':'به حساب هزینه می‌گذارد',
+  'Owns the gate':'مالک دروازه است','Born into it':'با آن به دنیا آمده','Takes a share':'سهم می‌گیرد',
+  'Keeps a copy':'یک نسخه نگه می‌دارد','Redraws the map':'نقشه را از نو می‌کشد','Takes the levy':'عوارض می‌گیرد',
+  'Borrows cheap':'ارزان قرض می‌گیرد','Negotiates hard':'سرسختانه چانه می‌زند',
+
+  /* ── job descriptions ── */
+  'Houses, hotels and skyscrapers cost you 15% less.':'خانه، هتل و آسمان‌خراش برای شما ۱۵٪ ارزان‌تر است.',
+  'Collect $30 from the bank whenever another player buys a deed from the bank.':'هر بار بازیکن دیگری از بانک سندی بخرد، ۳۰ دلار از بانک بگیرید.',
+  'Your railroad rent is half again as much. Once per lap you may ride free to any railroad.':'اجارهٔ راه‌آهن شما یک‌ونیم برابر است. هر دور یک‌بار می‌توانید رایگان به هر راه‌آهنی بروید.',
+  'Every rent you collect is increased by 10%.':'هر اجاره‌ای که می‌گیرید ۱۰٪ بیشتر می‌شود.',
+  'Every rent you pay is reduced by 12%. You always leave jail free.':'هر اجاره‌ای که می‌پردازید ۱۲٪ کمتر می‌شود. همیشه رایگان از زندان بیرون می‌آیید.',
+  'Rolling doubles pays $70, and you collect $30 each time you leave jail.':'هر جفت ۷۰ دلار می‌دهد، و هر بار از زندان بیرون بیایید ۳۰ دلار می‌گیرید.',
+  'Your utilities charge 6x / 12x the roll instead of 4x / 10x.':'خدمات عمومی شما ۶× / ۱۲× تاس می‌گیرد به جای ۴× / ۱۰×.',
+  'Before rolling you may ride to any railroad for a $90 fare, as often as you like.':'پیش از تاس می‌توانید با ۹۰ دلار کرایه به هر راه‌آهنی بروید، هر چند بار که بخواهید.',
+  'Rent from your properties with four or more houses is increased by 15%.':'اجارهٔ ملک‌هایی که چهار خانه یا بیشتر دارند ۱۵٪ بیشتر می‌شود.',
+  'Rent insurance costs you $80 instead of $120, and you start the game holding one.':'بیمهٔ اجاره برای شما ۸۰ دلار است نه ۱۲۰، و بازی را با یکی در دست شروع می‌کنید.',
+  'Once per lap you may nudge your token up to two spaces in either direction.':'هر دور یک‌بار می‌توانید مهره‌تان را تا دو خانه به هر سو جابه‌جا کنید.',
+  'Income Tax and Luxury Tax cost you 25% less.':'مالیات بر درآمد و مالیات تجملات برای شما ۲۵٪ کمتر است.',
+  'Collect $40 from the bank whenever another player is sent to jail.':'هر بار بازیکن دیگری به زندان برود، ۴۰ دلار از بانک بگیرید.',
+  'Your payday scales with complete colour sets rather than a flat fee.':'پاداش شما به جای مبلغ ثابت، با ست‌های رنگی کامل بالا می‌رود.',
+  'Every deed you buy from the bank costs you 7% less.':'هر سندی که از بانک بخرید ۷٪ ارزان‌تر است.',
+  'Mortgages pay you 55% instead of half, and cost only 5% over to lift.':'رهن به شما ۵۵٪ می‌دهد نه نصف، و آزاد کردنش فقط ۵٪ اضافه دارد.',
+  'Selling a building returns three quarters of what you paid rather than half.':'فروش ساختمان سه‌چهارم پولتان را برمی‌گرداند نه نصف.',
+  'Collect $50 from the bank every time you complete a trade.':'هر بار معامله‌ای را تمام کنید ۵۰ دلار از بانک بگیرید.',
+  'Collect $15 from the bank at the start of each of your turns.':'در شروع هر نوبتتان ۱۵ دلار از بانک بگیرید.',
+  'When the market rises you gain $6 a point; when it falls you lose $4 a point.':'وقتی بازار بالا برود هر واحد ۶ دلار می‌گیرید؛ وقتی پایین بیاید هر واحد ۴ دلار می‌دهید.',
+  'The bank refunds 15% of every rent you pay.':'بانک ۱۵٪ هر اجاره‌ای که می‌پردازید را برمی‌گرداند.',
+  'Every other player pays you $15 as they pass GO.':'هر بازیکن دیگری هنگام عبور از GO به شما ۱۵ دلار می‌دهد.',
+  'You begin the game with an extra $300 in the bank.':'بازی را با ۳۰۰ دلار بیشتر شروع می‌کنید.',
+  'Collect a third of every tax another player pays to the bank.':'یک‌سوم هر مالیاتی که بازیکن دیگری به بانک می‌دهد را بگیرید.',
+  'Your Get Out of Jail Free cards are never used up.':'کارت‌های «آزادی از زندان» شما هیچ‌وقت تمام نمی‌شوند.',
+  'Once per lap you may swap places on the board with another player.':'هر دور یک‌بار می‌توانید جایتان روی تخته را با بازیکن دیگری عوض کنید.',
+  'Collect $15 from the bank whenever another player puts up a building.':'هر بار بازیکن دیگری ساختمانی بسازد، ۱۵ دلار از بانک بگیرید.',
+  'Your bank loans accrue 5% a lap instead of 10%.':'وام بانکی شما هر دور ۵٪ سود می‌گیرد نه ۱۰٪.',
+  'No single rent payment you make can exceed $350.':'هیچ اجاره‌ای که می‌پردازید نمی‌تواند از ۳۵۰ دلار بیشتر شود.',
+  'Pick one. It pays a bonus on every GO and bends a rule in your favour all game.':
+    'یکی را انتخاب کنید. هر بار از GO رد شوید پاداش می‌دهد و تا آخر بازی یک قانون را به نفع شما خم می‌کند.',
+  'Dimmed options are already taken.':'گزینه‌های کم‌رنگ قبلاً گرفته شده‌اند.',
+
+  /* ── bug report ── */
+  'Report a bug':'گزارش ایراد','Attach the game state':'پیوست کردن وضعیت بازی',
+  'What went wrong? What did you expect instead? Anything you did just before helps.':
+    'چه اتفاقی افتاد؟ انتظار داشتید چه بشود؟ هر کاری که درست قبلش کردید کمک می‌کند.',
+  'Positions, cash, deeds and the last 25 log lines. No names beyond the ones you typed.':
+    'موقعیت‌ها، پول، سندها و ۲۵ سطر آخر گزارش. هیچ نامی جز آنهایی که خودتان نوشته‌اید.',
+  'Report filed. If you can, keep playing — the log you sent includes the last 25 events.':
+    'گزارش ثبت شد. اگر می‌توانید بازی را ادامه بدهید — گزارشی که فرستادید ۲۵ رویداد آخر را دارد.',
+  'Thank you.':'ممنون.','Copy report':'کپی گزارش','Sent to':'فرستاده شد به',
+  'No game is running, so there is nothing to attach.':'بازی‌ای در جریان نیست، پس چیزی برای پیوست نیست.',
+
+  /* ── console ── */
+  'Console':'کنسول','Players':'بازیکنان','Game':'بازی','Raw':'خام','Replace state':'جایگزینی وضعیت',
+  'State replaced':'وضعیت جایگزین شد','Game state applied':'وضعیت بازی اعمال شد',
+  'That is not valid JSON.':'این JSON معتبر نیست.','State needs a players array.':'وضعیت به آرایهٔ players نیاز دارد.',
+  'State needs an own map.':'وضعیت به نقشهٔ own نیاز دارد.','Force game over':'پایان اجباری بازی',
+  'Give every deed to':'دادن همهٔ سندها به','Give every deed to…':'دادن همهٔ سندها به…',
+  'Return all deeds':'برگرداندن همهٔ سندها','Return all to bank':'برگرداندن همه به بانک',
+  'Every deed goes back to the bank.':'همهٔ سندها به بانک برمی‌گردند.',
+  'Clear all loans':'پاک کردن همهٔ وام‌ها','Set every balance…':'تعیین همهٔ موجودی‌ها…',
+  'Free Parking pot':'صندوق پارکینگ رایگان','Announcement':'اعلان','Send to everyone':'ارسال به همه',
+  'Reset the server':'ریست سرور','Reset sent to':'ریست فرستاده شد به','Moderator key':'کلید ناظر',
+  'Write the announcement first.':'اول متن اعلان را بنویسید.',
+  'every table on the server':'هر میزی روی سرور',
+  'Changes can only be applied on your turn — the table would reject them otherwise.':
+    'تغییرات فقط در نوبت خودتان اعمال می‌شود — وگرنه میز آنها را رد می‌کند.',
+
+  /* ── misc ── */
+  'Pass the device':'دستگاه را رد کنید','NOW PLAYING':'حالا نوبتِ','TO PLAY':'برای بازی',
+  'Nothing moves until':'هیچ‌چیز تکان نمی‌خورد تا',
+  'Your one big button':'تنها دکمهٔ بزرگ شما','Rent and colour sets':'اجاره و ست‌های رنگی',
+  'Trades and alliances':'معامله‌ها و اتحادها','Jail, and the cards':'زندان و کارت‌ها',
+  'The market, and Free Parking':'بازار، و پارکینگ رایگان',
+  'That is the whole game':'کل بازی همین است',
+  'That’s the tour. Have a good game.':'راهنما تمام شد. بازی خوبی داشته باشید.',
+  'You can start it any time from the menu.':'هر وقت خواستید از منو دوباره اجرایش کنید.',
+  'Start a game first — the tour runs over the real table.':'اول بازی را شروع کنید — راهنما روی میز واقعی اجرا می‌شود.',
+  'Want a quick tour of the table? Seven steps, over the real interface.':
+    'راهنمای کوتاهی از میز می‌خواهید؟ چند قدم، روی همین صفحهٔ واقعی.',
+  'This clears the saved game on this device and returns to the start.':
+    'این کار بازی ذخیره‌شده روی این دستگاه را پاک می‌کند و به شروع برمی‌گردد.',
+  'The game ends now and the standings are shown.':'بازی همین حالا تمام می‌شود و رده‌بندی نشان داده می‌شود.',
+  'Games in progress stay on the server, but everyone is interrupted.':'بازی‌های در جریان روی سرور می‌مانند، اما کار همه قطع می‌شود.',
+  'Every player on every table gets a white screen telling them to reload.':'هر بازیکن روی هر میزی صفحه‌ای سفید می‌بیند که می‌گوید صفحه را تازه کند.',
+  'Full screen was refused.':'تمام‌صفحه پذیرفته نشد.',
+  'Reload, Moderators have reset the server.':'صفحه را تازه کنید، ناظران سرور را ریست کرده‌اند.'
+};
+
+/* Phrases, for the text that is stitched around a player's name at run time.
+   Order matters: the longer pattern has to win before a shorter one eats it. */
+const FA_RE=[
+  [/\bGet Out of Jail Free\b/g,'آزادی از زندان'],
+  [/\brolls a third double\. Straight to jail\./g,'سه بار جفت آورد. یک‌راست به زندان.'],
+  [/\brolls doubles and walks out of jail\./g,'جفت آورد و از زندان بیرون آمد.'],
+  [/\brolled doubles — go again\./g,'جفت آورد — دوباره بریزید.'],
+  [/\bserves the full sentence and pays the \$50 fine\./g,'دوره‌اش را کامل کرد و ۵۰ دلار جریمه داد.'],
+  [/\bmisses the doubles —/g,'جفت نیاورد —'],
+  [/\battempt\(s\) left\./g,'تلاش باقی مانده.'],
+  [/\bargues their way out — Barrister\./g,'با استدلال بیرون آمد — وکیل.'],
+  [/\bwrites their own policy — one free insurance\./g,'بیمه‌نامهٔ خودش را نوشت — یک بیمهٔ رایگان.'],
+  [/\bis bankrupt\. Deeds return to the bank\./g,'ورشکسته شد. سندها به بانک برمی‌گردند.'],
+  [/\bis bankrupt\. Everything goes to\b/g,'ورشکسته شد. همه‌چیز می‌رسد به'],
+  [/\bbuys rent insurance — next rent halved\./g,'بیمهٔ اجاره خرید — اجارهٔ بعدی نصف می‌شود.'],
+  [/\bpockets a Get Out of Jail Free card\./g,'یک کارت آزادی از زندان برداشت.'],
+  [/\bspends a Get Out of Jail Free card\./g,'یک کارت آزادی از زندان خرج کرد.'],
+  [/\buses their copied Get Out of Jail Free card\./g,'از کارت کپی‌شدهٔ آزادی از زندان استفاده کرد.'],
+  [/\bis promoted — job payday now\b/g,'ترفیع گرفت — پاداش شغلی حالا'],
+  [/\bfiles as an Accountant — tax reduced to\b/g,'به عنوان حسابدار اظهارنامه داد — مالیات کم شد به'],
+  [/\btakes work as a\b/g,'مشغول کار شد به عنوان'],
+  [/\bstrike an alliance\./g,'با هم متحد شدند.'],
+  [/\btake the table together\./g,'میز را با هم بردند.'],
+  [/\bdeclines the alliance with\b/g,'اتحاد را رد کرد با'],
+  [/\bturns down the trade with\b/g,'معامله را رد کرد با'],
+  [/\boffers an alliance to\b/g,'پیشنهاد اتحاد داد به'],
+  [/\boffers a trade to\b/g,'پیشنهاد معامله داد به'],
+  [/\bproposes a trade\./g,'معامله‌ای پیشنهاد می‌کند.'],
+  [/\bwants to ally with you\./g,'می‌خواهد با شما متحد شود.'],
+  [/\bwants to trade with you\./g,'می‌خواهد با شما معامله کند.'],
+  [/\bto answer your trade offer\./g,'تا به پیشنهاد معاملهٔ شما پاسخ بدهد.'],
+  [/\bto answer your alliance offer\./g,'تا به پیشنهاد اتحاد شما پاسخ بدهد.'],
+  [/\bThe pact between\b/g,'پیمان میان'],
+  [/\bThe trade between\b/g,'معامله میان'],
+  [/\bfell through —/g,'به هم خورد —'],
+  [/\bends —/g,'تمام شد —'],
+  [/\blifts the mortgage on\b/g,'رهن را آزاد کرد از'],
+  [/\bis mortgaged; no rent collected\./g,'در رهن است؛ اجاره‌ای گرفته نشد.'],
+  [/\bmortgages\b/g,'به رهن گذاشت'],
+  [/\bsells a building on\b/g,'ساختمانی فروخت روی'],
+  [/\bbuilds a skyscraper on\b/g,'آسمان‌خراشی ساخت روی'],
+  [/\bbuilds a hotel on\b/g,'هتلی ساخت روی'],
+  [/\bbuilds a house on\b/g,'خانه‌ای ساخت روی'],
+  [/\bborrows\b/g,'قرض گرفت'],
+  [/\brepays\b/g,'بازپرداخت کرد'],
+  [/\bof the loan\./g,'از وام.'],
+  [/'s loan accrues\b/g,' سودِ وامش شد'],
+  [/\binterest \(balance\b/g,'بهره (مانده'],
+  [/\bswaps places with\b/g,'جایش را عوض کرد با'],
+  [/\badvances to\b/g,'پیش رفت تا'],
+  [/\bbacks up to\b/g,'عقب رفت تا'],
+  [/\bhurries to\b/g,'شتافت به'],
+  [/\bdrifts\b/g,'جابه‌جا شد'],
+  [/\bmoves\b/g,'حرکت کرد'],
+  [/\bposts bail\./g,'وثیقه گذاشت.'],
+  [/\bis up — still in jail\b/g,'نوبتش است — هنوز در زندان'],
+  [/\bis up\b/g,'نوبتش است'],
+  [/\bdraws:/g,'کارت کشید:'],
+  [/\bbuys\b/g,'خرید'],
+  [/\bpays\b/g,'پرداخت'],
+  [/\breceives\b/g,'دریافت کرد'],
+  [/\bloses\b/g,'از دست داد'],
+  [/\btoll at GO\b/g,'عوارض هنگام GO'],
+  [/\bMarket rises\b/g,'بازار بالا رفت'],
+  [/\bMarket falls\b/g,'بازار پایین آمد'],
+  [/\brents ×/g,'اجاره‌ها ×'],
+  [/\(shock\)/g,'(شوک)'],
+  [/\bSpeculator — market down\b/g,'سفته‌باز — بازار پایین'],
+  [/\bto the bank\b/g,'به بانک'],
+  [/\bDo not pass GO\. Do not collect a salary\./g,'از GO رد نشوید. حقوق نگیرید.'],
+  [/\bSpeeding\. Go directly to jail\./g,'سرعت غیرمجاز. یک‌راست به زندان.'],
+  [/\bfull set/g,'ست کامل'],
+  [/\bjail card/g,'کارت زندان'],
+  [/\bdeeds\b/g,'سند'],
+  [/\bdeed\b/g,'سند'],
+  [/\blaps\b/g,'دور'],
+  [/\bLoan\b/g,'وام'],
+  [/\bInsured\b/g,'بیمه'],
+  [/\bAllied ·/g,'هم‌پیمان ·'],
+  [/\bgames\b/g,'بازی'],
+  [/\bin\b(?= \$)/g,'ورودی'],
+  [/\bout\b(?= \$)/g,'خروجی'],
+  [/\bROUND\b/g,'دور'],
+  [/\bMARKET\b/g,'بازار'],
+  [/\bhost\b/g,'میزبان'],
+  /* built around a number at run time, so they cannot be whole-string keys */
+  [/\bDoubles (\d+) — roll again\./g,'جفت $1 — دوباره بریزید.'],
+  [/ each\b/g,' هرکدام'],
+  [/\bAlliance tithe\b/g,'سهم اتحاد'],
+  [/\bBailiff — turnkey fee\b/g,'مأمور اجرا — حق کلیدداری'],
+  [/\bBroker commission\b/g,'پورسانت دلال'],
+  [/\bGambler — doubles bonus\b/g,'قمارباز — پاداش جفت'],
+  [/\bHeir — inheritance\b/g,'وارث — ارث'],
+  [/\bNightwatchman shift\b/g,'شیفت نگهبان شب'],
+  [/\bPhilanthropist rebate\b/g,'برگشت نیکوکار'],
+  [/\bRealtor commission\b/g,'پورسانت بنگاه‌دار'],
+  [/\bSpeculator — market up\b/g,'سفته‌باز — بازار بالا'],
+  [/\bTax Collector share\b/g,'سهم مأمور مالیات'],
+  [/\bUnion Boss levy\b/g,'عوارض رئیس اتحادیه'],
+  [/\bFree Parking pot\b/g,'صندوق پارکینگ رایگان'],
+  [/\bGO salary\b/g,'حقوق GO'],
+  [/\blanded squarely on GO\b/g,'دقیقاً روی GO فرود آمد'],
+  [/\bbroken pact\b/g,'پیمان شکسته'],
+  [/\bbankruptcy\b/g,'ورشکستگی'],
+  [/\brail fare\b/g,'کرایهٔ قطار'],
+  [/\bstock sale\b/g,'فروش سهام'],
+  [/\bcrossword prize\b/g,'جایزهٔ جدول'],
+  [/\bbeauty contest\b/g,'مسابقهٔ زیبایی'],
+  [/\bopera night\b/g,'شب اپرا'],
+  [/\bholiday fund\b/g,'صندوق تعطیلات'],
+  [/\bconsultancy\b/g,'حق مشاوره'],
+  [/\bbank error\b/g,'اشتباه بانک'],
+  [/\bset by console\b/g,'تنظیم‌شده با کنسول'],
+  [/\bspeeding\b/g,'سرعت غیرمجاز'],
+  [/\bhospital\b/g,'بیمارستان'],
+  [/\bbirthday\b/g,'تولد'],
+  [/\baudit\b/g,'حسابرسی'],
+  [/\bbail\b/g,'وثیقه'],
+  [/\bstations?\b/g,'ایستگاه'],
+  [/\bContinue\b/g,'ادامه'],
+  [/\bDo it\b/g,'انجامش بده'],
+  [/\bEnd it\b/g,'تمامش کن'],
+  [/\bReset\b/g,'ریست'],
+  [/\bloan matured\b/g,'سررسید وام'],
+  [/\binsurance matured\b/g,'سررسید بیمه'],
+  [/\binheritance\b/g,'ارث'],
+  [/\bjob bonus\b/g,'پاداش شغلی'],
+  [/\bdividend\b/g,'سود سهام'],
+  [/\bmarket surge\b/g,'جهش بازار'],
+  [/\bstreet repairs\b/g,'تعمیر خیابان'],
+  [/\bschool fees\b/g,'شهریهٔ مدرسه'],
+  [/\bboard fees\b/g,'حق هیئت‌مدیره'],
+  [/\bcard rent\b/g,'اجارهٔ کارت'],
+  [/\bjail fine\b/g,'جریمهٔ زندان'],
+  [/\bhalf rent\b/g,'نصف اجاره'],
+  [/\brent shield\b/g,'سپر اجاره'],
+  [/\brepairs\b/g,'تعمیرات'],
+  [/\brefund\b/g,'برگشت پول'],
+  [/\brent on\b/g,'اجارهٔ'],
+  [/\bRolled\b/g,'تاس:'],
+  [/\bFREE PARKING\b/g,'پارکینگ رایگان'],
+  [/\bInsurance\b/g,'بیمه'],
+  [/\bNet\b/g,'خالص'],
+  [/(\d+)× roll/g,'$1× تاس'],
+  [/\bJobs in the deck\b/g,'شغل‌های موجود'],
+  [/\bPayday:/g,'پاداش:'],
+  [/\bper building you own\b/g,'به ازای هر ساختمانی که دارید'],
+  [/\bper utility\b/g,'به ازای هر خدمات عمومی'],
+  [/\bflat\b/g,'ثابت'],
+  [/→ currently\b/g,'← اکنون'],
+  [/\bRound\b/g,'دور'],
+  [/\bMkt\b/g,'بازار'],
+  [/\bStanding on\b/g,'ایستاده روی'],
+  [/\bspace (\d+)/g,'خانهٔ $1'],
+  [/\brent ×/g,'اجاره ×'],
+  [/\bYou hold\b/g,'شما دارید'],
+  [/\band stand on\b/g,'و ایستاده‌اید روی'],
+  [/\blist \$/g,'قیمت $'],
+  [/\bentries\b/g,'مورد'],
+  [/\bentry\b/g,'مورد'],
+  [/\bPAY \$/g,'بپرداز $'],
+  [/\bL(\d)\b/g,'سطح $1'],
+  [/\bof\b/g,'از']
+];
+/* Only applied to short fragments — see faOne. */
+const FA_RE_TINY=[
+  [/\bfor\b/g,'به قیمت'],
+  [/\bto\b/g,'به'],
+  [/\band\b/g,'و']
+];
+const FA_SKIP={INPUT:1,TEXTAREA:1,SCRIPT:1,STYLE:1,SELECT:1,OPTION:1};
+const FA_ATTRS=['aria-label','placeholder','title'];
+
+function faOne(s){
+  const k=s.replace(/\s+/g,' ').trim();
+  if(!k) return s;
+  const hit=FA[k];
+  // keep whatever space sat around the text, so words do not run together
+  if(hit!==undefined) return s.match(/^\s*/)[0]+hit+s.match(/\s*$/)[0];
+  let t=s;
+  for(const [re,to] of FA_RE) t=t.replace(re,to);
+  // The bare connectives only earn their keep on the short fragments the log
+  // stitches around a player's name. Let them near a paragraph and they turn
+  // untranslated prose into half-English rubble, so they stay off it.
+  if(k.length<=28) for(const [re,to] of FA_RE_TINY) t=t.replace(re,to);
+  return t;
+}
+
+/* The brand keeps its name, and anything marked no-l10n is left exactly as written. */
+function faBlocked(el){
+  for(let n=el;n&&n!==document.body;n=n.parentElement){
+    if(n.classList&&(n.classList.contains('brand')||n.hasAttribute('data-nol10n'))) return true;
+  }
+  return false;
+}
+
+function persian(root){
+  if(!UI.fa||!root) return;
+  const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+    acceptNode(n){
+      if(!n.nodeValue||!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const el=n.parentElement;
+      if(!el||FA_SKIP[el.tagName]) return NodeFilter.FILTER_REJECT;
+      if(faBlocked(el)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }});
+  const nodes=[];
+  for(let n=walk.nextNode();n;n=walk.nextNode()) nodes.push(n);
+  for(const n of nodes){
+    const t=faOne(n.nodeValue);
+    if(t!==n.nodeValue) n.nodeValue=t;
+  }
+  // the labels nobody sees until they need them
+  const all=root.querySelectorAll?root.querySelectorAll('*'):[];
+  for(const el of all){
+    if(faBlocked(el)) continue;
+    for(const a of FA_ATTRS){
+      const v=el.getAttribute&&el.getAttribute(a);
+      if(!v) continue;
+      const t=faOne(v);
+      if(t!==v) el.setAttribute(a,t);
+    }
+  }
+}
+
+/* One call at the end of a render, so there is a single place where the words
+   on screen are decided. Persian wins over Easy words: Easy words rewrites
+   English into other English, which this dictionary would then fail to match. */
+function localize(root){
+  if(!root) return;
+  if(UI.fa) persian(root); else plainWords(root);
+}
+
+function applyLang(){
+  const d=document.documentElement;
+  d.classList.toggle('fa',!!UI.fa);
+  d.lang=UI.fa?'fa':'en';
+  d.dir=UI.fa?'rtl':'ltr';
+}
+
+function setLang(code){
+  UI.fa=code==='fa';
+  store.set('monopoline.lang',code);
+  applyLang();
+  render();
+}
+
+/* Asked once, the first time this device opens the app, in both languages so
+   whichever one you read is the one you can answer in. */
+async function askLanguage(){
+  await showModal({title:'Language · زبان',dismiss:false,build(host,fin){
+    host.innerHTML='<p class="tiny muted center" data-nol10n style="margin-bottom:12px">'
+      +'Choose your language.<br><span style="direction:rtl;display:inline-block">زبان خود را انتخاب کنید.</span></p>'
+      +'<div class="grid" style="gap:9px">'
+      +'<button class="btn pri wide" data-lang="en" data-nol10n style="padding:15px">English</button>'
+      +'<button class="btn wide" data-lang="fa" data-nol10n style="padding:15px;direction:rtl">فارسی</button>'
+      +'</div><p class="tiny muted center" data-nol10n style="margin-top:11px">'
+      +'You can change this later in Setup.<br>'
+      +'<span style="direction:rtl;display:inline-block">بعداً می‌توانید از بخش تنظیمات عوضش کنید.</span></p>';
+    host.querySelectorAll('[data-lang]').forEach(b=>{
+      b.onclick=()=>{ fin(b.dataset.lang); };
+    });
+  }}).then(code=>{ setLang(code||'en'); });
+}
+
 function plainWords(root){
   if(!UI.easy||!root) return;
   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
@@ -4080,6 +4846,7 @@ function placeCoach(i,step,target){
         ${i>0?'<button class="btn sm" data-coach="back">Back</button>':''}
         <button class="btn sm pri" data-coach="next">${i===TUTORIAL.length-1?'Done':'Next'}</button>
       </div>`;
+    localize(card);   // translate before measuring: the height decides placement
     // measure the card, then choose the side that actually fits; if neither does,
     // float it over the target rather than letting it run off the screen
     card.style.top='0px'; card.style.bottom='';
@@ -4303,6 +5070,7 @@ function load(){
 
 /* ---------- boot ---------- */
 (function boot(){
+  applyLang();
   const params=new URLSearchParams(location.search);
   const table=params.get('table');
   render();
@@ -4322,6 +5090,8 @@ function load(){
   }
   document.documentElement.classList.toggle('lite',!!UI.lite);
   if(UI.lite) UI.iso=false;
+  // asked once per device, before anything else needs reading
+  if(!store.get('monopoline.lang')&&!table) askLanguage();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }

@@ -105,17 +105,26 @@ function serveStatic(req, res, urlPath) {
   const file = path.resolve(PUBLIC, rel);
   if (!file.startsWith(PUBLIC)) return send(res, 403, 'Forbidden');       // no path traversal
   fs.stat(file, (err, st) => {
+    // a folder means its index.html — /showcase/ should not fall through to the app
+    if (!err && st.isDirectory()) {
+      const inner = path.join(file, 'index.html');
+      if (fs.existsSync(inner)) return serveFile(res, inner);
+      return send(res, 404, 'Not found');
+    }
     if (err || !st.isFile()) {
       if (path.extname(file)) return send(res, 404, 'Not found');
       return serveStatic(req, res, '/');                                   // SPA fallback
     }
-    const ext = path.extname(file).toLowerCase();
-    // The app shell must never be cached stale; hashed assets could be, but we keep it simple.
-    const cache = ext === '.html' || ext === '.webmanifest' || file.endsWith('sw.js')
-      ? 'no-cache' : 'public, max-age=3600';
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': cache });
-    fs.createReadStream(file).pipe(res);
+    serveFile(res, file);
   });
+}
+function serveFile(res, file) {
+  const ext = path.extname(file).toLowerCase();
+  // The app shell must never be cached stale; hashed assets could be, but we keep it simple.
+  const cache = ext === '.html' || ext === '.webmanifest' || file.endsWith('sw.js')
+    ? 'no-cache' : 'public, max-age=3600';
+  res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': cache });
+  fs.createReadStream(file).pipe(res);
 }
 
 /* ---------- api ---------- */

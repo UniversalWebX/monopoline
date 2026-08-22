@@ -111,7 +111,19 @@ public/sw.js              service worker (offline shell)
 public/manifest.webmanifest
 public/icon.svg
 public/baghali.png        an image-backed playing piece
+public/showcase/          the trailer reel, served at /showcase/
 ```
+
+## The trailer
+
+`/showcase/` is a separate single page that plays a short title sequence for the app: a phone held in
+three-quarter perspective while a pointer works the real controls, cutting between six beats — the roll,
+the board, two devices trading, the palettes, and the sign-off. It runs on its own and can be scrubbed
+from the beat rail at the bottom, `←`/`→` step between beats and `space` pauses. It shares nothing with
+the game and cannot affect it.
+
+**Watch the reel** on the home screen (and under Setup → Help) plays it inside the app in a lightbox.
+The reel honours `?lang=fa` and `?still=1`, so it follows the app’s language and Lightweight setting.
 
 ### API
 
@@ -172,12 +184,33 @@ holds one peer connection to each other, and the server only relays offers, answ
 audio never touches it. Needs HTTPS (Render provides it) and microphone permission. Lightweight mode
 turns it off.
 
+## Language
+
+The app ships in **English and Persian (فارسی)**. The first time it opens on a device it asks which
+one, in both languages, and remembers the answer; it can be changed any time from **Setup → Language**.
+
+Persian switches the whole document to `dir="rtl"` and a Persian-capable system font stack, with the
+things that encode position or quantity — the board, the dice, every money column — pinned back to
+left-to-right so the numbers read the same as the ones on the table in front of you. Amounts stay in
+Latin digits for the same reason.
+
+Translation happens on the way to the screen, the same mechanism **Easy words** uses: whole text nodes
+are matched against a dictionary first — which is where every label, heading, button, board space, job,
+card and tour step lands — and what is left goes through a phrase pass, which is what catches the log
+lines the game stitches around a player’s name. Those log lines therefore keep English word order with
+Persian vocabulary; they read as a ledger, not as prose. Player names, table codes and the wordmark are
+never touched.
+
+Easy words is written in English, so it is hidden while Persian is on rather than producing a mix of
+the two. The trailer reel is translated as well and follows whichever language the app is in.
+
 ## Modes
 
 Under the **Setup** tab:
 
+- **Language** — English or Persian (فارسی); see above.
 - **Easy words** — rewrites the interface into plain language, so deeds become property cards and
-  mortgages become borrowing.
+  mortgages become borrowing. English only, so it is hidden while Persian is on.
 - **Lightweight** — no animations, flat board, no voice. Everything battery-hungry is switched off.
 
 ## Moderator powers
