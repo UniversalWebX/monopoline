@@ -43,6 +43,29 @@ To deploy without the blueprint, create a **Web Service** with:
 > Rooms live in memory and are cleared 8 hours after their last activity — and on every deploy/restart.
 > Pass-and-play games are saved in the browser, so they survive regardless.
 
+## Deploy to Cloudflare
+
+`wrangler.jsonc` and `cloudflare/worker.js` run the same app on Cloudflare Workers. `public/` is served
+as static assets from Cloudflare's edge, and each table lives in its own Durable Object, so tables survive
+deploys and restarts. It fits the Workers free plan, and nothing sleeps.
+
+```bash
+npx wrangler login
+npx wrangler deploy
+```
+
+The first deploy creates the Worker, both Durable Object classes, and the `monopoline.vortal.space`
+custom domain with its DNS record and certificate. Run it locally with `npx wrangler dev`.
+
+| | Render (`server.js`) | Cloudflare (`cloudflare/worker.js`) |
+| --- | --- | --- |
+| Live updates | Server-Sent Events | WebSockets, falling back to SSE when a network blocks them |
+| Rooms | In memory, lost on restart | Saved per table, cleared 8 hours after last activity |
+| Bug reports | Render logs | Workers Logs (**Workers & Pages → monopoline → Logs**) |
+| Moderator key | Render environment variable | `npx wrangler secret put ADMIN_KEY` |
+
+The API is identical, and the client works against either server.
+
 ## Install on a phone
 
 Open the deployed URL and use **Add to Home Screen**. It installs as a standalone app and the service

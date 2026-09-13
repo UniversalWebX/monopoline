@@ -1,0 +1,34 @@
+// Cloudflare Workers config: https://developers.cloudflare.com/workers/wrangler/configuration/
+// Deploy: npx wrangler deploy     Local test: npx wrangler dev
+{
+  "name": "monopoline",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-08-15",
+
+  // public/ is served straight from Cloudflare's edge; only /api/* runs the Worker.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // Room = one per table, Hub = one for the whole server. SQLite-backed so they run on the free plan.
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "Room" },
+      { "name": "HUB", "class_name": "Hub" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room", "Hub"] }
+  ],
+
+  // Cloudflare creates the DNS record and certificate for this hostname on deploy.
+  "routes": [
+    { "pattern": "monopoline.vortal.space", "custom_domain": true }
+  ],
+
+  // Keeps console output (bug reports, moderator actions) in Workers Logs.
+  "observability": { "enabled": true }
+}

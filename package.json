@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "cf:dev": "npx wrangler dev",
+    "cf:deploy": "npx wrangler deploy"
   },
   "engines": {
     "node": ">=18"
