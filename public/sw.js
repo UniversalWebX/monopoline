@@ -34,6 +34,3 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(request).then(hit => hit || caches.match('./index.html')))
   );
 });
-
-
-print("loaded");

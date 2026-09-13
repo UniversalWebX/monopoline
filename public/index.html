@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
 <meta name="theme-color" content="#0F1216">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -906,6 +907,57 @@ function defaultCfg(){return{
   economy:true, dice:'digital', jobMode:'draft', loans:true, handoff:true, jobsOff:[], alliances:true
 };}
 
+/* ══════════ live connection ══════════
+   Cloudflare hosting holds a table open over a WebSocket, which costs nothing
+   while idle; the Node server speaks Server-Sent Events. LiveEvents looks like
+   an EventSource to Net.connect, tries the socket first, and falls back to
+   EventSource for the rest of the session if a socket never opens. */
+class LiveEvents{
+  constructor(url){
+    this.url=url; this.handlers={}; this.onerror=null; this.closed=false;
+    this.ws=null; this.es=null; this.retryT=null; this.pingT=null;
+    if(typeof WebSocket==='undefined'||LiveEvents.sseOnly) this.useSSE(); else this.openSocket();
+  }
+  addEventListener(type,fn){
+    (this.handlers[type]=this.handlers[type]||[]).push(fn);
+    if(this.es) this.es.addEventListener(type,fn);
+  }
+  emit(type,data){
+    (this.handlers[type]||[]).forEach(fn=>{ try{ fn({type,data}); }catch(e){ console.error(e); } });
+  }
+  openSocket(){
+    const u=new URL(this.url,location.href);
+    u.protocol=u.protocol==='https:'?'wss:':'ws:';
+    u.pathname=u.pathname.replace(/\/events$/,'/socket');
+    let opened=false;
+    const ws=new WebSocket(u.href); this.ws=ws;
+    ws.onopen=()=>{ opened=true; LiveEvents.socketOk=true; this.emit('open','');
+      clearInterval(this.pingT); this.pingT=setInterval(()=>{ try{ ws.send('ping'); }catch(e){} },30000); };
+    ws.onmessage=m=>{
+      if(typeof m.data!=='string'||m.data==='pong') return;
+      const i=m.data.indexOf('\n'); if(i>0) this.emit(m.data.slice(0,i),m.data.slice(i+1));
+    };
+    ws.onclose=()=>{
+      clearInterval(this.pingT); if(this.ws===ws) this.ws=null;
+      if(this.closed) return;
+      // never opened on a server that has never offered sockets: it's the Node server, use SSE
+      if(!opened&&!LiveEvents.socketOk){ LiveEvents.sseOnly=true; this.useSSE(); return; }
+      if(this.onerror) this.onerror();
+      this.retryT=setTimeout(()=>{ if(!this.closed) this.openSocket(); },3000);
+    };
+  }
+  useSSE(){
+    const es=new EventSource(this.url); this.es=es;
+    Object.keys(this.handlers).forEach(t=>this.handlers[t].forEach(fn=>es.addEventListener(t,fn)));
+    es.onerror=e=>{ if(this.onerror) this.onerror(e); };
+  }
+  close(){
+    this.closed=true; clearTimeout(this.retryT); clearInterval(this.pingT);
+    if(this.ws){ try{ this.ws.close(); }catch(e){} this.ws=null; }
+    if(this.es){ this.es.close(); this.es=null; }
+  }
+}
+
 /* ══════════ networking ══════════ */
 const Net={
   mode:'local', code:null, pid:null, token:null, v:0, host:false, title:'',
@@ -946,7 +998,7 @@ const Net={
 
   connect(){
     if(this.es){ this.es.close(); this.es=null; }
-    const es=new EventSource('/api/rooms/'+this.code+'/events?token='+encodeURIComponent(this.token));
+    const es=new LiveEvents('/api/rooms/'+this.code+'/events?token='+encodeURIComponent(this.token));
     this.es=es;
     this.status='connecting';
     es.addEventListener('open',()=>{ this.status='live'; renderNetChip(); });
